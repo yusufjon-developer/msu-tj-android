@@ -51,7 +51,14 @@ class ScheduleViewModel(
                     setEffect { ScheduleEffect.ShowToast("Ошибка: ${e.message}") }
                 }
                 .collect { lessons ->
-                    setState { copy(isLoading = false, lessons = lessons) }
+                    val grouped = lessons.groupBy { it.dayIndex }
+
+                    setState {
+                        copy(
+                            isLoading = false,
+                            scheduleByDay = grouped
+                        )
+                    }
                 }
         }
     }

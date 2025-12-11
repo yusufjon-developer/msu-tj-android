@@ -90,15 +90,20 @@ fun ScheduleScreen(
         } else {
             HorizontalPager(
                 state = pagerState,
-                modifier = Modifier.fillMaxSize()
+                modifier = Modifier.fillMaxSize(),
+                beyondViewportPageCount = 1
             ) { pageIndex ->
-                val lessonsForDay = state.lessons.filter { it.dayIndex == pageIndex }
+
+                val lessonsForDay = state.scheduleByDay[pageIndex] ?: emptyList()
 
                 LazyColumn(
                     modifier = Modifier.fillMaxSize(),
                     contentPadding = PaddingValues(bottom = 16.dp)
                 ) {
-                    items(lessonsForDay) { lesson ->
+                    items(
+                        items = lessonsForDay,
+                        key = { lesson -> lesson.id }
+                    ) { lesson ->
                         LessonItem(
                             lesson = lesson,
                             onClick = {
