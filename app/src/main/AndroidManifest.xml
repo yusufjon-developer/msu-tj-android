@@ -15,7 +15,7 @@
             android:supportsRtl="true"
             android:theme="@style/Theme.MSUTJ">
         <activity
-                android:name=".MainActivity"
+                android:name=".presentation.screen.main.MainActivity"
                 android:exported="true"
                 android:theme="@style/Theme.MSUTJ">
             <intent-filter>

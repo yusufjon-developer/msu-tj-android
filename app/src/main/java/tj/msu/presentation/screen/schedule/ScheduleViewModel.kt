@@ -1,22 +1,60 @@
 package tj.msu.presentation.screen.schedule
 
 import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.koin.android.annotation.KoinViewModel
+import tj.msu.data.repository.UserPreferencesRepository
 import tj.msu.domain.repository.ScheduleRepository
 import tj.msu.presentation.core.base.MVIViewModel
 
 @KoinViewModel
 class ScheduleViewModel(
-    private val repository: ScheduleRepository
+    private val repository: ScheduleRepository,
+    private val userPrefs: UserPreferencesRepository
 ) : MVIViewModel<ScheduleEvent, ScheduleEffect, ScheduleState>() {
 
-    override fun createInitialState(): ScheduleState = ScheduleState()
+    override fun createInitialState(): ScheduleState = ScheduleState(isLoading = true)
 
     init {
-        loadSchedule(generateGroupId(currentState.selectedFacultyCode, currentState.selectedCourse))
+        observeUserPreferences()
+    }
+
+    private fun observeUserPreferences() {
+        viewModelScope.launch {
+            userPrefs.userProfile.collectLatest { localProfile ->
+
+                if (localProfile != null) {
+                    val newGroupId = generateGroupId(localProfile.facultyCode, localProfile.course)
+
+                    val currentGroupId = generateGroupId(currentState.selectedFacultyCode, currentState.selectedCourse)
+
+                    if (newGroupId != currentGroupId || currentState.scheduleByDay.isEmpty()) {
+
+                        setState {
+                            copy(
+                                isLoading = currentState.scheduleByDay.isEmpty(),
+                                selectedFacultyCode = localProfile.facultyCode,
+                                selectedCourse = localProfile.course
+                            )
+                        }
+
+                        loadSchedule(newGroupId)
+                    }
+                } else {
+                    loadDefaultSchedule()
+                }
+            }
+        }
+    }
+
+    private fun loadDefaultSchedule() {
+        val defaultGroupId = generateGroupId(currentState.selectedFacultyCode, currentState.selectedCourse)
+        loadSchedule(defaultGroupId)
     }
 
     override fun handleEvent(event: ScheduleEvent) {
@@ -44,21 +82,19 @@ class ScheduleViewModel(
         viewModelScope.launch {
             repository.getDailySchedule(groupId)
                 .onStart {
-                    setState { copy(isLoading = true, error = null) }
+                    if (currentState.scheduleByDay.isEmpty()) {
+                        setState { copy(isLoading = true, error = null) }
+                    }
                 }
                 .catch { e ->
                     setState { copy(isLoading = false, error = e.message) }
                     setEffect { ScheduleEffect.ShowToast("Ошибка: ${e.message}") }
                 }
                 .collect { lessons ->
-                    val grouped = lessons.groupBy { it.dayIndex }
-
-                    setState {
-                        copy(
-                            isLoading = false,
-                            scheduleByDay = grouped
-                        )
+                    val grouped = withContext(Dispatchers.Default) {
+                        lessons.groupBy { it.dayIndex }
                     }
+                    setState { copy(isLoading = false, scheduleByDay = grouped) }
                 }
         }
     }

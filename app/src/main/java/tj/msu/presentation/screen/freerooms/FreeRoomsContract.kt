@@ -12,10 +12,9 @@ data class PairFreeRooms(
 
 data class FreeRoomsState(
     val isLoading: Boolean = false,
-
     val freeRoomsByDay: Map<Int, List<PairFreeRooms>> = emptyMap(),
-
     val currentDayIndex: Int = 0,
+    val isExpandableLayout: Boolean = true,
     val error: String? = null
 ) : UiState
 

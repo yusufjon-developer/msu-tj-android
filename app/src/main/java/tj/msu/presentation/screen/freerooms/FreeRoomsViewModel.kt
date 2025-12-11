@@ -7,13 +7,15 @@ import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.koin.android.annotation.KoinViewModel
+import tj.msu.data.repository.UserPreferencesRepository
 import tj.msu.domain.repository.ScheduleRepository
 import tj.msu.presentation.core.base.MVIViewModel
 import java.time.LocalDate
 
 @KoinViewModel
 class FreeRoomsViewModel(
-    private val repository: ScheduleRepository
+    private val repository: ScheduleRepository,
+    private val userPrefs: UserPreferencesRepository
 ) : MVIViewModel<FreeRoomsEvent, FreeRoomsEffect, FreeRoomsState>() {
 
     override fun createInitialState(): FreeRoomsState {
@@ -24,6 +26,17 @@ class FreeRoomsViewModel(
 
     init {
         setEvent(FreeRoomsEvent.LoadData)
+        observeSettings()
+    }
+
+    private fun observeSettings() {
+        viewModelScope.launch {
+            userPrefs.userProfile.collect { profile ->
+                if (profile != null) {
+                    setState { copy(isExpandableLayout = profile.isExpandableFreeRooms) }
+                }
+            }
+        }
     }
 
     override fun handleEvent(event: FreeRoomsEvent) {
@@ -41,13 +54,15 @@ class FreeRoomsViewModel(
                 .onStart { setState { copy(isLoading = true) } }
                 .catch { e -> setState { copy(isLoading = false, error = e.message) } }
                 .collect { freeRooms ->
-                    val processedMap = processAllDays(freeRooms.schedule)
+                    withContext(Dispatchers.Default) {
+                        val processedMap = processAllDays(freeRooms.schedule)
 
-                    setState {
-                        copy(
-                            isLoading = false,
-                            freeRoomsByDay = processedMap
-                        )
+                        setState {
+                            copy(
+                                isLoading = false,
+                                freeRoomsByDay = processedMap
+                            )
+                        }
                     }
                 }
         }
