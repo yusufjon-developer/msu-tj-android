@@ -2,6 +2,7 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
 >
 
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
     <uses-permission android:name="android.permission.INTERNET" />
 
     <application
@@ -15,7 +16,7 @@
             android:supportsRtl="true"
             android:theme="@style/Theme.MSUTJ">
         <activity
-                android:name=".MainActivity"
+                android:name=".presentation.screen.main.MainActivity"
                 android:exported="true"
                 android:theme="@style/Theme.MSUTJ">
             <intent-filter>
@@ -24,6 +25,14 @@
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
         </activity>
+
+        <service
+                android:name="tj.msu.service.MsuFirebaseMessagingService"
+                android:exported="false">
+            <intent-filter>
+                <action android:name="com.google.firebase.MESSAGING_EVENT" />
+            </intent-filter>
+        </service>
     </application>
 
 </manifest>

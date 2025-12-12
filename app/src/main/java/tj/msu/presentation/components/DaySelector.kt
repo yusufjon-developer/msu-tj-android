@@ -1,4 +1,4 @@
-package tj.msu.presentation.screen.schedule.components
+package tj.msu.presentation.components
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable

@@ -11,14 +11,12 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
-import org.koin.androidx.compose.koinViewModel
 import tj.msu.presentation.navigation.Screen
 import tj.msu.presentation.screen.freerooms.FreeRoomsScreen
 import tj.msu.presentation.screen.notifications.NotificationScreen
@@ -30,10 +28,9 @@ import tj.msu.presentation.theme.MsuBlue
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MainScreen(
-    viewModel: MainViewModel = koinViewModel()
+    unreadNotificationsCount: Int
 ) {
     val navController = rememberNavController()
-    val unreadCount by viewModel.unreadNotificationsCount.collectAsStateWithLifecycle()
 
     val bottomNavScreens = listOf(
         Screen.Schedule,
@@ -78,10 +75,10 @@ fun MainScreen(
                         IconButton(onClick = {
                             navController.navigate(Screen.Notifications.route)
                         }) {
-                            if (unreadCount > 0) {
+                            if (unreadNotificationsCount > 0) {
                                 BadgedBox(
                                     badge = {
-                                        Badge { Text(text = unreadCount.toString()) }
+                                        Badge { Text(text = unreadNotificationsCount.toString()) }
                                     }
                                 ) {
                                     Icon(
@@ -152,10 +149,7 @@ fun MainScreen(
             composable(Screen.Schedule.route) { ScheduleScreen() }
             composable(Screen.FreeRooms.route) { FreeRoomsScreen() }
             composable(Screen.Profile.route) { ProfileScreen() }
-
-            composable(Screen.Notifications.route) {
-                NotificationScreen()
-            }
+            composable(Screen.Notifications.route) { NotificationScreen() }
         }
     }
 }

@@ -19,10 +19,10 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.coroutines.launch
 import org.koin.androidx.compose.koinViewModel
-import tj.msu.presentation.screen.schedule.components.DaySelector
+import tj.msu.presentation.components.DaySelector
+import tj.msu.presentation.components.SelectionBottomSheet
 import tj.msu.presentation.screen.schedule.components.GroupSelectionCard
 import tj.msu.presentation.screen.schedule.components.LessonItem
-import tj.msu.presentation.screen.schedule.components.SelectionBottomSheet
 import tj.msu.presentation.theme.MsuBlue
 import java.time.LocalDate
 
@@ -90,15 +90,20 @@ fun ScheduleScreen(
         } else {
             HorizontalPager(
                 state = pagerState,
-                modifier = Modifier.fillMaxSize()
+                modifier = Modifier.fillMaxSize(),
+                beyondViewportPageCount = 1
             ) { pageIndex ->
-                val lessonsForDay = state.lessons.filter { it.dayIndex == pageIndex }
+
+                val lessonsForDay = state.scheduleByDay[pageIndex] ?: emptyList()
 
                 LazyColumn(
                     modifier = Modifier.fillMaxSize(),
                     contentPadding = PaddingValues(bottom = 16.dp)
                 ) {
-                    items(lessonsForDay) { lesson ->
+                    items(
+                        items = lessonsForDay,
+                        key = { lesson -> lesson.id }
+                    ) { lesson ->
                         LessonItem(
                             lesson = lesson,
                             onClick = {

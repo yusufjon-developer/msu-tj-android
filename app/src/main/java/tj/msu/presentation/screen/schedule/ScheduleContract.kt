@@ -7,7 +7,7 @@ import tj.msu.presentation.core.base.UiState
 
 data class ScheduleState(
     val isLoading: Boolean = false,
-    val lessons: List<Lesson> = emptyList(),
+    val scheduleByDay: Map<Int, List<Lesson>> = emptyMap(),
     val error: String? = null,
     val selectedFacultyCode: String = "pmi",
     val selectedCourse: Int = 3,
