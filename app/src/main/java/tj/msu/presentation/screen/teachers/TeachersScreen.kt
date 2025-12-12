@@ -1,10 +1,13 @@
 package tj.msu.presentation.screen.teachers
 
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -19,25 +22,41 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import kotlinx.coroutines.launch
 import org.koin.androidx.compose.koinViewModel
 import tj.msu.domain.model.TeacherModel
 import tj.msu.presentation.components.DaySelector
 import tj.msu.presentation.components.LessonItem
+import java.time.LocalDate
 import java.util.*
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
 fun TeachersScreen(
     viewModel: TeachersViewModel = koinViewModel()
 ) {
     val state by viewModel.uiState.collectAsState()
 
+   
+    val scope = rememberCoroutineScope()
 
+   
+    val currentDayOfWeek = remember {
+       
+       
+        val day = LocalDate.now().dayOfWeek.value - 1
+        if (day in 0..6) day else 0
+    }
+
+   
+    val pagerState = rememberPagerState(
+        initialPage = currentDayOfWeek,
+        pageCount = { 7 }
+    )
+
+   
     var showBottomSheet by remember { mutableStateOf(false) }
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
-
-
-    var selectedDayIndex by remember { mutableIntStateOf(getCurrentDayIndex()) }
 
     Scaffold(
         containerColor = Color(0xFFF5F5F5)
@@ -47,18 +66,16 @@ fun TeachersScreen(
                 .padding(paddingValues)
                 .fillMaxSize()
         ) {
-
-
             Spacer(modifier = Modifier.height(16.dp))
 
+           
             TeacherSelectorCard(
-                teacherName = state.selectedTeacher?.name ?: "Загрузка...",
+                teacherName = state.selectedTeacher?.name ?: "Выберите преподавателя",
                 onClick = {
                     viewModel.setEvent(TeachersEvent.OnResetSearch)
                     showBottomSheet = true
                 }
             )
-
 
             if (state.isLoading) {
                 Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -67,41 +84,52 @@ fun TeachersScreen(
             } else {
                 val teacher = state.selectedTeacher
                 if (teacher != null) {
-
-
+                   
                     DaySelector(
-                        selectedDayIndex = selectedDayIndex,
-                        onDaySelected = { selectedDayIndex = it }
-                    )
-
-
-                    val daySchedule = teacher.days.find { it.dayIndex == selectedDayIndex }
-                    val lessons = daySchedule?.lessons ?: emptyList()
-
-                    if (lessons.isNotEmpty()) {
-                        LazyColumn(
-                            modifier = Modifier.fillMaxSize(),
-                            contentPadding = PaddingValues(bottom = 16.dp)
-                        ) {
-                            items(lessons) { lesson ->
-
-                                LessonItem(
-                                    lesson = lesson,
-                                    onClick = {  }
-                                )
+                        selectedDayIndex = pagerState.currentPage,
+                        onDaySelected = { index ->
+                           
+                            scope.launch {
+                                pagerState.animateScrollToPage(index)
                             }
                         }
-                    } else {
+                    )
 
-                        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                            Text("В этот день занятий нет", color = Color.Gray)
+                   
+                    HorizontalPager(
+                        state = pagerState,
+                        modifier = Modifier.fillMaxSize(),
+                       
+                    ) { pageIndex ->
+
+                       
+                        val daySchedule = teacher.days.find { it.dayIndex == pageIndex }
+                        val lessons = daySchedule?.lessons ?: emptyList()
+
+                        if (lessons.isNotEmpty()) {
+                            LazyColumn(
+                                modifier = Modifier.fillMaxSize(),
+                                contentPadding = PaddingValues(bottom = 16.dp)
+                            ) {
+                                items(lessons) { lesson ->
+                                    LessonItem(
+                                        lesson = lesson,
+                                        onClick = {  }
+                                    )
+                                }
+                            }
+                        } else {
+                           
+                            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                                Text("В этот день занятий нет", color = Color.Gray)
+                            }
                         }
                     }
                 }
             }
         }
 
-
+       
         if (showBottomSheet) {
             TeacherSearchBottomSheet(
                 sheetState = sheetState,
