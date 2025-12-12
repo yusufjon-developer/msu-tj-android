@@ -15,6 +15,11 @@ interface AuthRepository {
 
     suspend fun saveUserProfile(uid: String, name: String, faculty: String, course: Int): Result<Unit>
     suspend fun getUserProfile(uid: String): Result<UserProfileDto?>
+    suspend fun saveFcmToken()
 
     fun signOut()
+
+    fun subscribeToGroupNotifications(faculty: String, course: Int)
+
+    fun unsubscribeFromGroupNotifications(faculty: String, course: Int)
 }

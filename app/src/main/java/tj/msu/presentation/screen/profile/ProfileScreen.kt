@@ -8,6 +8,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ExitToApp
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -16,10 +17,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalUriHandler
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import org.koin.androidx.compose.koinViewModel
+import tj.msu.R
 import tj.msu.presentation.components.SelectionBottomSheet
 import tj.msu.presentation.theme.MsuBackground
 import tj.msu.presentation.theme.MsuBlue
@@ -31,6 +35,11 @@ fun ProfileScreen(
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val context = LocalContext.current
+
+   
+    val uriHandler = LocalUriHandler.current
+   
+    val githubReleasesUrl = "https://github.com/yusufjon-developer/msu-tj-android/releases"
 
     var showEditSheet by remember { mutableStateOf(false) }
 
@@ -66,6 +75,7 @@ fun ProfileScreen(
 
         Spacer(modifier = Modifier.height(24.dp))
 
+       
         Box(
             modifier = Modifier
                 .size(100.dp)
@@ -83,6 +93,7 @@ fun ProfileScreen(
 
         Spacer(modifier = Modifier.height(16.dp))
 
+       
         Text(
             text = state.name.ifBlank { "Загрузка..." },
             style = MaterialTheme.typography.headlineSmall,
@@ -98,6 +109,7 @@ fun ProfileScreen(
 
         Spacer(modifier = Modifier.height(32.dp))
 
+       
         Card(
             modifier = Modifier.fillMaxWidth(),
             colors = CardDefaults.cardColors(containerColor = Color.White),
@@ -150,6 +162,7 @@ fun ProfileScreen(
 
         Spacer(modifier = Modifier.height(16.dp))
 
+       
         Card(
             modifier = Modifier.fillMaxWidth(),
             colors = CardDefaults.cardColors(containerColor = Color.White),
@@ -192,8 +205,62 @@ fun ProfileScreen(
             }
         }
 
+        Spacer(modifier = Modifier.height(16.dp))
+
+       
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            colors = CardDefaults.cardColors(containerColor = Color.White),
+            shape = RoundedCornerShape(16.dp),
+            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable {
+                       
+                        uriHandler.openUri(githubReleasesUrl)
+                    }
+                    .padding(16.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+               
+                Icon(
+                    painter = painterResource(id = R.drawable.ic_release),
+                    contentDescription = null,
+                    tint = MsuBlue,
+                    modifier = Modifier.size(24.dp)
+                )
+
+                Spacer(modifier = Modifier.width(16.dp))
+
+               
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = "История обновлений",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.Black
+                    )
+                    Text(
+                        text = "GitHub Releases",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = Color.Gray
+                    )
+                }
+
+               
+                Icon(
+                    imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                    contentDescription = null,
+                    tint = Color.Gray
+                )
+            }
+        }
+
         Spacer(modifier = Modifier.weight(1f))
 
+       
         Button(
             onClick = { viewModel.setEvent(ProfileEvent.OnLogout) },
             modifier = Modifier.fillMaxWidth().height(50.dp),

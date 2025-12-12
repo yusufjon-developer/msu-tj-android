@@ -5,6 +5,9 @@ import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.auth.GoogleAuthProvider
 import com.google.firebase.database.FirebaseDatabase
+import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.SetOptions
+import com.google.firebase.messaging.FirebaseMessaging
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
@@ -18,7 +21,9 @@ class AuthRepositoryImpl(
     private val firebaseAuth: FirebaseAuth,
     private val db: FirebaseDatabase,
     private val googleSignInClient: GoogleSignInClient,
-    private val userPrefs: UserPreferencesRepository
+    private val userPrefs: UserPreferencesRepository,
+    private val firebaseMessaging: FirebaseMessaging,
+    private val firebaseFirestore: FirebaseFirestore,
 ) : AuthRepository {
 
     override val currentUser: FirebaseUser?
@@ -67,10 +72,23 @@ class AuthRepositoryImpl(
 
             userPrefs.saveUserSelection(name, faculty, course)
 
+            subscribeToGroupNotifications(faculty, course)
+
             Result.success(Unit)
         } catch (e: Exception) {
             Result.failure(e)
         }
+    }
+
+    override fun subscribeToGroupNotifications(faculty: String, course: Int) {
+        firebaseMessaging.subscribeToTopic("global")
+        val topic = "${faculty}_${course}"
+        firebaseMessaging.subscribeToTopic(topic)
+    }
+
+    override fun unsubscribeFromGroupNotifications(faculty: String, course: Int) {
+        val topic = "${faculty}_${course}"
+        firebaseMessaging.unsubscribeFromTopic(topic)
     }
 
     override suspend fun getUserProfile(uid: String): Result<UserProfileDto?> {
@@ -85,6 +103,29 @@ class AuthRepositoryImpl(
             Result.success(profile)
         } catch (e: Exception) {
             Result.failure(e)
+        }
+    }
+
+    override suspend fun saveFcmToken() {
+        val user = firebaseAuth.currentUser ?: return
+
+        try {
+           
+            val token = firebaseMessaging.token.await()
+
+            val data = hashMapOf("fcmToken" to token)
+
+            firebaseFirestore.collection("users")
+                .document(user.uid)
+                .set(data, SetOptions.merge())
+                .await()
+
+           
+            firebaseMessaging.subscribeToTopic("announcements").await()
+            firebaseMessaging.subscribeToTopic("updates").await()
+
+        } catch (e: Exception) {
+            e.printStackTrace()
         }
     }
 

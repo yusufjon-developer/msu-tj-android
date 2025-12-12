@@ -70,9 +70,13 @@ class ProfileViewModel(
 
     private fun updateGroup(faculty: String, course: Int) {
         val user = authRepository.currentUser ?: return
+        val oldFaculty = currentState.facultyCode
+        val oldCourse = currentState.course
 
         viewModelScope.launch {
             setState { copy(isLoading = true) }
+
+            authRepository.unsubscribeFromGroupNotifications(oldFaculty, oldCourse)
 
             val result = authRepository.saveUserProfile(
                 uid = user.uid,
