@@ -19,10 +19,11 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.coroutines.launch
 import org.koin.androidx.compose.koinViewModel
+import tj.msu.domain.model.LessonType
 import tj.msu.presentation.components.DaySelector
+import tj.msu.presentation.components.LessonItem
 import tj.msu.presentation.components.SelectionBottomSheet
 import tj.msu.presentation.screen.schedule.components.GroupSelectionCard
-import tj.msu.presentation.screen.schedule.components.LessonItem
 import tj.msu.presentation.theme.MsuBlue
 import java.time.LocalDate
 
@@ -107,7 +108,7 @@ fun ScheduleScreen(
                         LessonItem(
                             lesson = lesson,
                             onClick = {
-                                if (lesson.type != tj.msu.domain.model.LessonType.WINDOW) {
+                                if (lesson.type != LessonType.WINDOW) {
                                     viewModel.setEvent(ScheduleEvent.OnLessonClick(lesson.title))
                                 }
                             }

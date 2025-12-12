@@ -10,6 +10,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.navigation.NavGraph.Companion.findStartDestination
@@ -17,11 +19,13 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import tj.msu.presentation.navigation.IconSource
 import tj.msu.presentation.navigation.Screen
 import tj.msu.presentation.screen.freerooms.FreeRoomsScreen
 import tj.msu.presentation.screen.notifications.NotificationScreen
 import tj.msu.presentation.screen.profile.ProfileScreen
 import tj.msu.presentation.screen.schedule.ScheduleScreen
+import tj.msu.presentation.screen.teachers.TeachersScreen
 import tj.msu.presentation.theme.MsuBackground
 import tj.msu.presentation.theme.MsuBlue
 
@@ -35,6 +39,7 @@ fun MainScreen(
     val bottomNavScreens = listOf(
         Screen.Schedule,
         Screen.FreeRooms,
+        Screen.Teachers,
         Screen.Profile
     )
 
@@ -114,7 +119,16 @@ fun MainScreen(
                         val isSelected = currentDestination?.hierarchy?.any { it.route == screen.route } == true
 
                         NavigationBarItem(
-                            icon = { Icon(screen.icon, contentDescription = null) },
+                            icon = {
+                                when (val icon = screen.icon) {
+                                    is IconSource.Vector -> {
+                                        Icon(imageVector = icon.imageVector, contentDescription = screen.title)
+                                    }
+                                    is IconSource.Resource -> {
+                                        Icon(imageVector = ImageVector.vectorResource(icon.id), contentDescription = screen.title)
+                                    }
+                                }
+                            },
                             label = { Text(screen.title) },
                             selected = isSelected,
                             colors = NavigationBarItemDefaults.colors(
@@ -148,6 +162,7 @@ fun MainScreen(
         ) {
             composable(Screen.Schedule.route) { ScheduleScreen() }
             composable(Screen.FreeRooms.route) { FreeRoomsScreen() }
+            composable(Screen.Teachers.route) { TeachersScreen() }
             composable(Screen.Profile.route) { ProfileScreen() }
             composable(Screen.Notifications.route) { NotificationScreen() }
         }
