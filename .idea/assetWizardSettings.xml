@@ -310,8 +310,8 @@
                         <option name="values">
                           <map>
                             <entry key="assetSourceType" value="FILE" />
-                            <entry key="outputName" value="ic_release" />
-                            <entry key="sourceFile" value="C:\Users\itfri\Downloads\rocket-sharp-svgrepo-com.svg" />
+                            <entry key="outputName" value="ic_teacher" />
+                            <entry key="sourceFile" value="C:\Users\itfri\Downloads\ic_teacher.svg" />
                           </map>
                         </option>
                       </PersistentState>
