@@ -1,34 +1,38 @@
 # 🎓 MSU TJ - University Schedule App
 
-![Kotlin](https://img.shields.io/badge/Kotlin-2.0.21-purple.svg)
-![Compose](https://img.shields.io/badge/Jetpack%20Compose-Material3-blue.svg)
-![Go](https://img.shields.io/badge/Backend-Go_1.25-00ADD8?logo=go&logoColor=white)
-![Firebase](https://img.shields.io/badge/Firebase-Auth%20%7C%20Firestore%20%7C%20Cloud%20Functions-orange.svg)
+![Kotlin](https://img.shields.io/badge/Kotlin-2.0.0-purple.svg?logo=kotlin)
+![Compose](https://img.shields.io/badge/Jetpack%20Compose-Material3-blue.svg?logo=android)
+![Firebase](https://img.shields.io/badge/Firebase-Realtime%20DB%20%7C%20FCM-orange.svg?logo=firebase)
+![Go](https://img.shields.io/badge/Backend-Go-00ADD8?logo=go&logoColor=white)
 
-**MSU TJ** is a mobile application designed for students of the Lomonosov Moscow State University (Dushanbe Branch). It helps students track their class schedules, find available classrooms, and receive real-time notifications from the university.
+**MSU TJ** is a comprehensive mobile application designed for students and faculty of the Lomonosov Moscow State University (Dushanbe Branch). It provides real-time access to class schedules, university news, and classroom availability.
 
 <p align="center">
-  <a href="https://github.com/yusufjon-developer/msu-tj-android/releases/tag/v1.0">
-    <img src="https://img.shields.io/badge/Download-APK%20v1.0.0-blue?style=for-the-badge&logo=android" alt="Download APK">
+  <a href="https://github.com/yusufjon-developer/msu-tj-android/releases/tag/v1.1.1">
+    <img src="https://img.shields.io/badge/Download-APK%20v1.1.1-3DDC84?style=for-the-badge&logo=android&logoColor=white" alt="Download APK">
   </a>
 </p>
 
 ## ✨ Key Features
 
-* **📅 Class Schedule:** View daily schedules for different student groups and courses.
-* **🏫 Free Classrooms:** Smart filter to find empty auditoriums based on time and day of the week.
+* **📅 Student Schedule:**
+    * View daily schedules filtered by faculty and course.
+    * **Swipe Navigation:** Easily switch between days of the week using swipe gestures.
+    * **Real-time Sync:** Schedule changes update instantly.
+* **👨‍🏫 Teacher Schedule (New!):**
+    * Search for instructors by name.
+    * View detailed weekly workloads for teachers.
+* **🏫 Free Classrooms:** Smart filter to find empty auditoriums based on current time and day.
 * **🔔 Push Notifications:**
     * Instant alerts for schedule changes or university news.
-    * Powered by the **Go Backend** + **Firebase Cloud Functions**.
-    * Real-time unread message counter (Badge) and notification history.
+    * Powered by **Go Backend** + **Firebase Cloud Functions**.
 * **👤 Student Profile:** Manage faculty and course details with cloud synchronization.
-* **🔐 Authentication:** Secure sign-in via Email/Password and **Google Sign-In**.
 
 ## 📱 Screenshots
 
-|               Authentication               |                   Schedule                    |                   Free Rooms                   |                   Notifications                    |
-|:------------------------------------------:|:---------------------------------------------:|:----------------------------------------------:|:--------------------------------------------------:|
-| <img src="assets/login.jpg" width="250" /> | <img src="assets/schedule.jpg" width="250" /> | <img src="assets/freerooms.jpg" width="250" /> | <img src="assets/notifications.jpg" width="250" /> |
+| Student Schedule | Teacher Search | Teacher Schedule |
+|:-------------------------:|:-------------------------:|:-------------------------:|
+| <img src="image_bd9211.png" width="250" /> | <img src="image_bd2996.png" width="250" /> | <img src="image_bd8ed2.png" width="250" /> |
 
 ## 🛠 Tech Stack
 
@@ -36,51 +40,53 @@
 * **Language:** Kotlin
 * **UI:** Jetpack Compose (Material Design 3)
 * **Architecture:** Clean Architecture + MVI (Model-View-Intent)
-* **DI (Dependency Injection):** Koin
-* **Concurrency:** Kotlin Coroutines & Flow
-* **Navigation:** Jetpack Navigation Compose
+* **DI:** Koin
+* **Async:** Kotlin Coroutines & Flow
+* **Data Sources:**
+    * **Firebase Realtime Database:** For live schedule synchronization.
+    * **Cloud Firestore:** For user profiles and notifications.
 
 ### Backend Service (Go)
 * **Language:** Golang
-* **Purpose:** Parsing schedule data, managing student data, and triggering system notifications.
-* **Integration:** Firebase Admin SDK for writing to Firestore.
+* **Purpose:** Parsing schedule data, managing student records, and triggering system-wide notifications.
+* **Integration:** Firebase Admin SDK.
 
 ### Cloud Services (Firebase)
 * **Authentication:** User management and secure session handling.
-* **Cloud Firestore:** Real-time NoSQL database.
-* **Cloud Messaging (FCM):** Delivery of push notifications.
-* **Cloud Functions (Node.js):** Serverless triggers that listen for database updates and send FCM payloads.
+* **Realtime Database:** Stores the schedule structure (optimized for JSON trees).
+* **Cloud Messaging (FCM):** Delivery of targeted push notifications.
+* **Cloud Functions:** Serverless triggers for database events.
 
 ## 🏗 System Architecture
 
 The project follows an **Event-Driven Architecture**:
 
-1.  The **Go Backend** parses data or an admin creates a notification -> Writes to **Firestore**.
-2.  A **Cloud Function** (`onDocumentCreated`) detects the new record in the `notifications` collection.
-3.  The function retrieves the user's token and sends the payload via **FCM**.
-4.  The **Android App** receives the push via `MsuFirebaseMessagingService` and displays the notification.
+1.  The **Go Backend** parses data or an admin creates a notification -> Writes to **Firestore/Realtime DB**.
+2.  The **Android App** observes these data sources via `callbackFlow`.
+3.  When data changes, the UI updates automatically (Reactive UI).
+4.  For important alerts, a **Cloud Function** triggers an **FCM** payload to subscribed devices/topics.
 
 ## 🚀 Getting Started
 
 ### 1. Android Client
 1.  Clone the repository:
     ```bash
-    git clone https://github.com/yusufjon-developer/msu-tj-android.git
+    git clone [https://github.com/yusufjon-developer/msu-tj-android.git](https://github.com/yusufjon-developer/msu-tj-android.git)
     ```
-2.  **Important:** This project requires a `google-services.json` file.
+2.  **Setup Firebase:**
     * Create a project in the [Firebase Console](https://console.firebase.google.com/).
-    * Download the configuration file and place it in the `app/` directory.
-3.  Open the project in Android Studio and wait for Gradle synchronization.
-4.  Run on an Emulator or a Physical Device.
+    * Download `google-services.json` and place it in the `app/` directory.
+3.  Open the project in Android Studio (Ladybug or newer recommended).
+4.  Sync Gradle and run on an Emulator/Device.
 
 ### 2. Go Backend
-To run the backend, you need a Firebase Service Account key.
+To run the backend tools:
 
 1.  Clone the repository:
     ```bash
-    git clone https://github.com/yusufjon-developer/msu-tj-backend.git
+    git clone [https://github.com/yusufjon-developer/msu-tj-backend.git](https://github.com/yusufjon-developer/msu-tj-backend.git)
     ```
-2.  Place your `serviceAccountKey.json` file in the root of the project.
+2.  Place your `serviceAccountKey.json` file in the project root.
 3.  Run the server:
     ```bash
     go run cmd/app/main.go
