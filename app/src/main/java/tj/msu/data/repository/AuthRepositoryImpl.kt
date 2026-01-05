@@ -5,6 +5,7 @@ import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.auth.GoogleAuthProvider
 import com.google.firebase.database.FirebaseDatabase
+import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.SetOptions
 import com.google.firebase.messaging.FirebaseMessaging
@@ -81,14 +82,33 @@ class AuthRepositoryImpl(
     }
 
     override fun subscribeToGroupNotifications(faculty: String, course: Int) {
-        firebaseMessaging.subscribeToTopic("global")
-        val topic = "${faculty}_${course}"
-        firebaseMessaging.subscribeToTopic(topic)
+        val groupTopic = "${faculty}_${course}"
+        val globalTopic = "global"
+
+        firebaseMessaging.subscribeToTopic(globalTopic)
+        firebaseMessaging.subscribeToTopic(groupTopic)
+
+        val user = firebaseAuth.currentUser ?: return
+
+        val userRef = firebaseFirestore.collection("users").document(user.uid)
+
+        userRef.update("subscribedTopics", FieldValue.arrayUnion(globalTopic, groupTopic))
+            .addOnSuccessListener {
+                android.util.Log.d("FCM", "Топики сохранены в профиль: $globalTopic, $groupTopic")
+            }
+            .addOnFailureListener { e ->
+                android.util.Log.e("FCM", "Ошибка сохранения топиков", e)
+            }
     }
 
     override fun unsubscribeFromGroupNotifications(faculty: String, course: Int) {
-        val topic = "${faculty}_${course}"
-        firebaseMessaging.unsubscribeFromTopic(topic)
+        val groupTopic = "${faculty}_${course}"
+        firebaseMessaging.unsubscribeFromTopic(groupTopic)
+
+        val user = firebaseAuth.currentUser ?: return
+
+        firebaseFirestore.collection("users").document(user.uid)
+            .update("subscribedTopics", FieldValue.arrayRemove(groupTopic))
     }
 
     override suspend fun getUserProfile(uid: String): Result<UserProfileDto?> {

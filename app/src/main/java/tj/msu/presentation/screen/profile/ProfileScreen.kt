@@ -4,8 +4,10 @@ import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ExitToApp
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
@@ -42,6 +44,7 @@ fun ProfileScreen(
     val githubReleasesUrl = "https://github.com/yusufjon-developer/msu-tj-android/releases"
 
     var showEditSheet by remember { mutableStateOf(false) }
+    val scrollState = rememberScrollState()
 
     LaunchedEffect(Unit) {
         viewModel.effect.collect { effect ->
@@ -68,6 +71,7 @@ fun ProfileScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
+            .verticalScroll(scrollState)
             .background(MsuBackground)
             .padding(16.dp),
         horizontalAlignment = Alignment.CenterHorizontally
@@ -260,6 +264,7 @@ fun ProfileScreen(
 
         Spacer(modifier = Modifier.weight(1f))
 
+        Spacer(Modifier.height(16.dp))
        
         Button(
             onClick = { viewModel.setEvent(ProfileEvent.OnLogout) },
