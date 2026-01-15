@@ -18,6 +18,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.coroutines.launch
 import org.koin.androidx.compose.koinViewModel
 import tj.msu.presentation.components.DaySelector
+import tj.msu.presentation.components.NextWeekButton
 import tj.msu.presentation.screen.freerooms.components.ClassicFreeRoomCardItem
 import tj.msu.presentation.screen.freerooms.components.ExpandableFreeRoomCardItem
 import tj.msu.presentation.theme.MsuBlue
@@ -49,8 +50,21 @@ fun FreeRoomsScreen(
 
     Column(modifier = Modifier.fillMaxSize()) {
 
+        Box(
+            modifier = Modifier
+                .fillMaxWidth(),
+            contentAlignment = Alignment.CenterEnd
+        ) {
+            NextWeekButton(
+                isVisible = state.isNextWeekAvailable,
+                isNextWeek = state.isNextWeek,
+                onClick = { viewModel.setEvent(FreeRoomsEvent.OnToggleNextWeek) }
+            )
+        }
+
         DaySelector(
             selectedDayIndex = pagerState.currentPage,
+            displayedDates = state.weekDates,
             onDaySelected = { index ->
                 scope.launch { pagerState.scrollToPage(index) }
             }

@@ -11,7 +11,10 @@ data class TeachersState(
     val allTeachers: List<TeacherModel> = emptyList(),
     val filteredTeachers: List<TeacherModel> = emptyList(),
     val selectedTeacher: TeacherModel? = null,
-    val searchQuery: String = ""
+    val searchQuery: String = "",
+    val isNextWeek: Boolean = false,
+    val weekDates: List<String> = emptyList(),
+    val isNextWeekAvailable: Boolean = false
 ) : UiState
 
 sealed class TeachersEvent : UiEvent {
@@ -19,6 +22,7 @@ sealed class TeachersEvent : UiEvent {
     data class OnSearch(val query: String) : TeachersEvent()
     data class OnSelectTeacher(val teacher: TeacherModel) : TeachersEvent()
     data object OnResetSearch : TeachersEvent()
+    data object OnToggleNextWeek : TeachersEvent()
 }
 
 sealed class TeachersEffect : UiEffect {

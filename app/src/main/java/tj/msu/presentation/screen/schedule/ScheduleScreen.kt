@@ -2,18 +2,18 @@ package tj.msu.presentation.screen.schedule
 
 import android.widget.Toast
 import androidx.compose.foundation.ExperimentalFoundationApi
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -22,6 +22,7 @@ import org.koin.androidx.compose.koinViewModel
 import tj.msu.domain.model.LessonType
 import tj.msu.presentation.components.DaySelector
 import tj.msu.presentation.components.LessonItem
+import tj.msu.presentation.components.NextWeekButton
 import tj.msu.presentation.components.SelectionBottomSheet
 import tj.msu.presentation.screen.schedule.components.GroupSelectionCard
 import tj.msu.presentation.theme.MsuBlue
@@ -76,9 +77,30 @@ fun ScheduleScreen(
             course = state.selectedCourse,
             onClick = { showBottomSheet = true }
         )
+        
+        Box(
+            modifier = Modifier
+                .fillMaxWidth(),
+            contentAlignment = Alignment.CenterEnd
+        ) {
+            NextWeekButton(
+                isVisible = state.isNextWeekAvailable,
+                isNextWeek = state.isNextWeek,
+                onClick = { viewModel.setEvent(ScheduleEvent.OnToggleNextWeek) }
+            )
+        }
+
+        val hasLessonsList = remember(state.scheduleByDay) {
+            (0..6).map { dayIndex ->
+                val lessons = state.scheduleByDay[dayIndex]
+                !lessons.isNullOrEmpty() && lessons.any { it.type != LessonType.WINDOW }
+            }
+        }
 
         DaySelector(
             selectedDayIndex = pagerState.currentPage,
+            displayedDates = state.weekDates,
+            hasLessons = hasLessonsList,
             onDaySelected = { index ->
                 scope.launch { pagerState.scrollToPage(index) }
             }
@@ -97,22 +119,40 @@ fun ScheduleScreen(
 
                 val lessonsForDay = state.scheduleByDay[pageIndex] ?: emptyList()
 
-                LazyColumn(
-                    modifier = Modifier.fillMaxSize(),
-                    contentPadding = PaddingValues(bottom = 16.dp)
-                ) {
-                    items(
-                        items = lessonsForDay,
-                        key = { lesson -> lesson.id }
-                    ) { lesson ->
-                        LessonItem(
-                            lesson = lesson,
-                            onClick = {
-                                if (lesson.type != LessonType.WINDOW) {
-                                    viewModel.setEvent(ScheduleEvent.OnLessonClick(lesson.title))
-                                }
-                            }
+
+                
+                val isTrulyEmpty = lessonsForDay.isEmpty() || lessonsForDay.all { it.type == LessonType.WINDOW }
+                
+                if (isTrulyEmpty) {
+                     Box(
+                        modifier = Modifier
+                            .fillMaxSize(),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = "В этот день занятий нет",
+                            style = MaterialTheme.typography.titleMedium,
+                            color = Color.Gray
                         )
+                    }
+                } else {
+                    LazyColumn(
+                        modifier = Modifier.fillMaxSize(),
+                        contentPadding = PaddingValues(bottom = 16.dp)
+                    ) {
+                        items(
+                            items = lessonsForDay,
+                            key = { lesson -> lesson.id }
+                        ) { lesson ->
+                            LessonItem(
+                                lesson = lesson,
+                                onClick = {
+                                    if (lesson.type != LessonType.WINDOW) {
+                                        viewModel.setEvent(ScheduleEvent.OnLessonClick(lesson.title))
+                                    }
+                                }
+                            )
+                        }
                     }
                 }
             }

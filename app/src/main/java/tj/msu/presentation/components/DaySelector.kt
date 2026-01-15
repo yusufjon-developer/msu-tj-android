@@ -7,7 +7,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -17,19 +16,16 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import tj.msu.presentation.theme.MsuBlue
-import java.time.LocalDate
+import tj.msu.presentation.theme.TextPractice
 
 @Composable
 fun DaySelector(
     selectedDayIndex: Int,
+    displayedDates: List<String> = emptyList(),
+    hasLessons: List<Boolean> = List(7) { true },
     onDaySelected: (Int) -> Unit
 ) {
     val days = listOf("ПН", "ВТ", "СР", "ЧТ", "ПТ", "СБ", "ВС")
-
-    val currentWeekStart = remember {
-        val today = LocalDate.now()
-        today.minusDays((today.dayOfWeek.value - 1).toLong())
-    }
 
     Row(
         modifier = Modifier
@@ -41,12 +37,30 @@ fun DaySelector(
     ) {
         days.forEachIndexed { index, dayName ->
             val isSelected = index == selectedDayIndex
+            val dayHasLessons = hasLessons.getOrElse(index) { true }
+            
             val backgroundColor = if (isSelected) MsuBlue else Color.Transparent
-            val contentColor = if (isSelected) Color.White else Color.Gray
+            
+            val contentColor = when {
+                isSelected -> Color.White
+                !dayHasLessons -> TextPractice.copy(alpha = 0.6f)
+                else -> Color.Gray
+            }
 
             val textToShow = if (isSelected) {
-                val date = currentWeekStart.plusDays(index.toLong())
-                date.dayOfMonth.toString()
+                if (index < displayedDates.size) {
+
+                    try {
+                        val dateStr = displayedDates[index]
+
+                        val parsed = dateStr.substringAfterLast("-", dateStr)
+                         if (parsed.isBlank()) dayName else parsed
+                    } catch (e: Exception) {
+                        dayName
+                    }
+                } else {
+                    dayName
+                }
             } else {
                 dayName
             }

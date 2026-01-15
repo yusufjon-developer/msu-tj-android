@@ -21,6 +21,7 @@ fun GroupScheduleDto.toDomainList(): List<Lesson> {
 
     daysList.forEachIndexed { dayIndex, dayMap ->
         val rawDayName = dayMap["day"] as? String
+        val date = dayMap["date"] as? String
         val cleanDayName = rawDayName?.trim() ?: getDayNameByIndex(dayIndex)
 
         val lessonsData = dayMap["lessons"]
@@ -65,10 +66,11 @@ fun GroupScheduleDto.toDomainList(): List<Lesson> {
                     subject = subject,
                     typeRaw = typeRaw,
                     teacher = teacher,
-                    room = room
+                    room = room,
+                    date = date
                 ))
             } else {
-                result.add(createWindowLesson(cleanDayName, pairNumber, dayIndex))
+                result.add(createWindowLesson(cleanDayName, pairNumber, dayIndex, date))
             }
         }
     }
@@ -104,7 +106,8 @@ fun createLesson(
     subject: String?,
     typeRaw: String?,
     teacher: String,
-    room: String
+    room: String,
+    date: String? = null
 ): Lesson {
     val rawType = typeRaw?.lowercase() ?: ""
 
@@ -115,6 +118,7 @@ fun createLesson(
         teacher = teacher,
         room = room,
         dayIndex = dayIndex,
+        date = date,
         type = when {
             rawType.contains("лекция") -> LessonType.LECTURE
             rawType.contains("практика") -> LessonType.PRACTICE
@@ -128,7 +132,7 @@ fun createLesson(
     )
 }
 
-fun createWindowLesson(dayName: String, pairNumber: Int, dayIndex: Int): Lesson {
+fun createWindowLesson(dayName: String, pairNumber: Int, dayIndex: Int, date: String? = null): Lesson {
     return Lesson(
         id = "window_${dayName}_${pairNumber}",
         title = "Свободная пара",
@@ -136,7 +140,8 @@ fun createWindowLesson(dayName: String, pairNumber: Int, dayIndex: Int): Lesson 
         teacher = "",
         room = "",
         dayIndex = dayIndex,
-        type = LessonType.WINDOW
+        type = LessonType.WINDOW,
+        date = date
     )
 }
 

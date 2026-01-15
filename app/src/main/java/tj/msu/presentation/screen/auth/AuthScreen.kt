@@ -56,9 +56,12 @@ fun AuthScreen(
                 account?.idToken?.let { token ->
                     viewModel.setEvent(AuthEvent.OnGoogleSignIn(token))
                 }
-            } catch (_: ApiException) {
-                Toast.makeText(context, "Google Sign In Failed", Toast.LENGTH_SHORT).show()
+            } catch (e: ApiException) {
+                Toast.makeText(context, "Ошибка входа Google: ${e.statusCode}", Toast.LENGTH_LONG).show()
+                e.printStackTrace()
             }
+        } else {
+             Toast.makeText(context, "Вход отменен (Code: ${result.resultCode})", Toast.LENGTH_SHORT).show()
         }
     }
 

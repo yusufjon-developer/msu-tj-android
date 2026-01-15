@@ -71,6 +71,12 @@ class ScheduleViewModel(
             is ScheduleEvent.OnLessonClick -> {
                 setEffect { ScheduleEffect.ShowToast(event.name) }
             }
+            is ScheduleEvent.OnToggleNextWeek -> {
+                val newNextWeek = !currentState.isNextWeek
+                setState { copy(isNextWeek = newNextWeek) }
+                val groupId = generateGroupId(currentState.selectedFacultyCode, currentState.selectedCourse)
+                loadSchedule(groupId, newNextWeek)
+            }
         }
     }
 
@@ -78,10 +84,19 @@ class ScheduleViewModel(
         return "${faculty}_${course}"
     }
 
-    private fun loadSchedule(groupId: String) {
+    private fun loadSchedule(groupId: String, isNextWeek: Boolean = false) {
         viewModelScope.launch {
-            repository.getDailySchedule(groupId)
+
+            launch {
+                repository.checkNextWeekScheduleAvailability(groupId).collect { available ->
+                    setState { copy(isNextWeekAvailable = available) }
+
+                }
+            }
+
+            repository.getDailySchedule(groupId, isNextWeek)
                 .onStart {
+
                     if (currentState.scheduleByDay.isEmpty()) {
                         setState { copy(isLoading = true, error = null) }
                     }
@@ -94,7 +109,26 @@ class ScheduleViewModel(
                     val grouped = withContext(Dispatchers.Default) {
                         lessons.groupBy { it.dayIndex }
                     }
-                    setState { copy(isLoading = false, scheduleByDay = grouped) }
+
+
+                    val datesMap = mutableMapOf<Int, String>()
+                    lessons.forEach { lesson ->
+                        if (lesson.date != null) {
+                            datesMap[lesson.dayIndex] = lesson.date
+                        }
+                    }
+                    
+                    val datesList = (0..6).map { index ->
+                        datesMap[index] ?: ""
+                    }
+
+                    setState { 
+                        copy(
+                            isLoading = false, 
+                            scheduleByDay = grouped, 
+                            weekDates = datesList 
+                        ) 
+                    }
                 }
         }
     }

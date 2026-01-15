@@ -7,10 +7,12 @@ import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.onStart
+import kotlinx.coroutines.launch
 import org.koin.android.annotation.KoinViewModel
 import tj.msu.domain.model.TeacherModel
 import tj.msu.domain.repository.TeacherRepository
 import tj.msu.presentation.core.base.MVIViewModel
+import tj.msu.presentation.util.DateUtils
 
 @KoinViewModel
 class TeachersViewModel(
@@ -20,7 +22,11 @@ class TeachersViewModel(
     override fun createInitialState() = TeachersState()
 
     init {
-
+        viewModelScope.launch {
+            repository.checkNextWeekTeachersAvailability().collect { available ->
+                setState { copy(isNextWeekAvailable = available) }
+            }
+        }
         setEvent(TeachersEvent.LoadData)
     }
 
@@ -32,16 +38,20 @@ class TeachersViewModel(
                 copy(selectedTeacher = event.teacher)
             }
             is TeachersEvent.OnResetSearch -> {
-
                 setState {
                     copy(searchQuery = "", filteredTeachers = allTeachers)
                 }
+            }
+            is TeachersEvent.OnToggleNextWeek -> {
+                val nextWeek = !currentState.isNextWeek
+                setState { copy(isNextWeek = nextWeek, selectedTeacher = null) }
+                loadTeachers()
             }
         }
     }
 
     private fun loadTeachers() {
-        repository.getTeachers()
+        repository.getTeachers(currentState.isNextWeek)
             .onStart { setState { copy(isLoading = true) } }
             .catch { error ->
                 setState { copy(isLoading = false) }
@@ -65,7 +75,8 @@ class TeachersViewModel(
 
                         filteredTeachers = performFilter(incomingTeachers, searchQuery),
 
-                        selectedTeacher = updatedSelectedTeacher
+                        selectedTeacher = updatedSelectedTeacher,
+                        weekDates = DateUtils.getWeekDates(currentState.isNextWeek)
                     )
                 }
             }

@@ -10,6 +10,7 @@ import org.koin.android.annotation.KoinViewModel
 import tj.msu.data.repository.UserPreferencesRepository
 import tj.msu.domain.repository.ScheduleRepository
 import tj.msu.presentation.core.base.MVIViewModel
+import tj.msu.presentation.util.DateUtils
 import java.time.LocalDate
 
 @KoinViewModel
@@ -27,6 +28,12 @@ class FreeRoomsViewModel(
     init {
         setEvent(FreeRoomsEvent.LoadData)
         observeSettings()
+        
+        viewModelScope.launch {
+            repository.checkNextWeekFreeRoomsAvailability().collect { available ->
+                setState { copy(isNextWeekAvailable = available) }
+            }
+        }
     }
 
     private fun observeSettings() {
@@ -45,22 +52,29 @@ class FreeRoomsViewModel(
             is FreeRoomsEvent.SelectDay -> {
                 setState { copy(currentDayIndex = event.dayIndex) }
             }
+            is FreeRoomsEvent.OnToggleNextWeek -> {
+                val nextWeek = !currentState.isNextWeek
+                setState { copy(isNextWeek = nextWeek) }
+                loadData()
+            }
         }
     }
 
     private fun loadData() {
         viewModelScope.launch {
-            repository.getFreeRooms()
+            repository.getFreeRooms(currentState.isNextWeek)
                 .onStart { setState { copy(isLoading = true) } }
                 .catch { e -> setState { copy(isLoading = false, error = e.message) } }
                 .collect { freeRooms ->
                     withContext(Dispatchers.Default) {
                         val processedMap = processAllDays(freeRooms.schedule)
+                        val dates = DateUtils.getWeekDates(currentState.isNextWeek)
 
                         setState {
                             copy(
                                 isLoading = false,
-                                freeRoomsByDay = processedMap
+                                freeRoomsByDay = processedMap,
+                                weekDates = dates
                             )
                         }
                     }

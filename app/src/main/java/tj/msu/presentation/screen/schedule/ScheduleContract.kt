@@ -19,13 +19,17 @@ data class ScheduleState(
         "gmu" to "ГМУ",
         "hfmm" to "ХФММ"
     ),
-    val courses: List<Int> = listOf(1, 2, 3, 4)
+    val courses: List<Int> = listOf(1, 2, 3, 4),
+    val isNextWeek: Boolean = false,
+    val weekDates: List<String> = emptyList(),
+    val isNextWeekAvailable: Boolean = false
 ) : UiState
 
 sealed interface ScheduleEvent : UiEvent {
     data object LoadData : ScheduleEvent
     data class OnApplyFilters(val facultyCode: String, val course: Int) : ScheduleEvent
     data class OnLessonClick(val name: String) : ScheduleEvent
+    data object OnToggleNextWeek : ScheduleEvent
 }
 
 sealed interface ScheduleEffect : UiEffect {

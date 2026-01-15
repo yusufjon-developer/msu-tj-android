@@ -15,12 +15,16 @@ data class FreeRoomsState(
     val freeRoomsByDay: Map<Int, List<PairFreeRooms>> = emptyMap(),
     val currentDayIndex: Int = 0,
     val isExpandableLayout: Boolean = true,
-    val error: String? = null
+    val error: String? = null,
+    val isNextWeek: Boolean = false,
+    val weekDates: List<String> = emptyList(),
+    val isNextWeekAvailable: Boolean = false
 ) : UiState
 
 sealed interface FreeRoomsEvent : UiEvent {
     data object LoadData : FreeRoomsEvent
     data class SelectDay(val dayIndex: Int) : FreeRoomsEvent
+    data object OnToggleNextWeek : FreeRoomsEvent
 }
 
 sealed interface FreeRoomsEffect : UiEffect

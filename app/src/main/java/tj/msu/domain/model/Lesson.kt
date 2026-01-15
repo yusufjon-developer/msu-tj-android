@@ -7,7 +7,8 @@ data class Lesson(
     val type: LessonType,
     val teacher: String,
     val room: String,
-    val dayIndex: Int
+    val dayIndex: Int,
+    val date: String? = null
 )
 
 enum class LessonType(val displayName: String) {

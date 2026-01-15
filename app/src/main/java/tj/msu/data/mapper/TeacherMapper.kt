@@ -25,6 +25,7 @@ fun TeacherDto.toDomain(originalId: String): TeacherModel {
 
     val domainDays = daysList.mapIndexed { dayIndex, dayMap ->
         val rawDayName = dayMap["day"] as? String
+        val date = dayMap["date"] as? String
         val cleanDayName = rawDayName?.trim() ?: getDayNameByIndex(dayIndex)
 
 
@@ -74,7 +75,8 @@ fun TeacherDto.toDomain(originalId: String): TeacherModel {
                         subject = subject,
                         typeRaw = typeRaw,
                         teacher = groups,
-                        room = room
+                        room = room,
+                        date = date
                     )
                 )
             } else {
@@ -86,7 +88,8 @@ fun TeacherDto.toDomain(originalId: String): TeacherModel {
         DayScheduleModel(
             dayIndex = dayIndex,
             dayName = cleanDayName,
-            lessons = dailyLessons
+            lessons = dailyLessons,
+            date = date
         )
     }
 

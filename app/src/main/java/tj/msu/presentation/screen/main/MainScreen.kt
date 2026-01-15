@@ -1,7 +1,9 @@
 package tj.msu.presentation.screen.main
 
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Notifications
@@ -13,6 +15,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
 import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.NavHost
@@ -113,7 +116,8 @@ fun MainScreen(
             if (isMainScreen) {
                 NavigationBar(
                     containerColor = MaterialTheme.colorScheme.surface,
-                    contentColor = MsuBlue
+                    contentColor = MsuBlue,
+                    modifier = Modifier.height(72.dp)
                 ) {
                     bottomNavScreens.forEach { screen ->
                         val isSelected = currentDestination?.hierarchy?.any { it.route == screen.route } == true
@@ -122,21 +126,26 @@ fun MainScreen(
                             icon = {
                                 when (val icon = screen.icon) {
                                     is IconSource.Vector -> {
-                                        Icon(imageVector = icon.imageVector, contentDescription = screen.title)
+                                        Icon(
+                                            imageVector = icon.imageVector,
+                                            contentDescription = screen.title,
+                                            modifier = Modifier.size(28.dp)
+                                        )
                                     }
                                     is IconSource.Resource -> {
-                                        Icon(imageVector = ImageVector.vectorResource(icon.id), contentDescription = screen.title)
+                                        Icon(
+                                            imageVector = ImageVector.vectorResource(icon.id),
+                                            contentDescription = screen.title,
+                                            modifier = Modifier.size(28.dp)
+                                        )
                                     }
                                 }
                             },
-                            label = { Text(screen.title) },
                             selected = isSelected,
                             colors = NavigationBarItemDefaults.colors(
                                 selectedIconColor = MsuBlue,
-                                selectedTextColor = MsuBlue,
                                 indicatorColor = MsuBlue.copy(alpha = 0.1f),
-                                unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                                unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant
+                                unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant
                             ),
                             onClick = {
                                 navController.navigate(screen.route) {

@@ -5,6 +5,8 @@ import tj.msu.domain.model.FreeRooms
 import tj.msu.domain.model.Lesson
 
 interface ScheduleRepository {
-    fun getDailySchedule(groupId: String): Flow<List<Lesson>>
-    fun getFreeRooms(): Flow<FreeRooms>
+    fun getDailySchedule(groupId: String, isNextWeek: Boolean = false): Flow<List<Lesson>>
+    fun getFreeRooms(isNextWeek: Boolean = false): Flow<FreeRooms>
+    fun checkNextWeekScheduleAvailability(groupId: String): Flow<Boolean>
+    fun checkNextWeekFreeRoomsAvailability(): Flow<Boolean>
 }

@@ -4,5 +4,6 @@ import kotlinx.coroutines.flow.Flow
 import tj.msu.domain.model.TeacherModel
 
 interface TeacherRepository {
-    fun getTeachers(): Flow<List<TeacherModel>>
+    fun getTeachers(isNextWeek: Boolean = false): Flow<List<TeacherModel>>
+    fun checkNextWeekTeachersAvailability(): Flow<Boolean>
 }

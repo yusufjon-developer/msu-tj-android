@@ -27,6 +27,7 @@ import org.koin.androidx.compose.koinViewModel
 import tj.msu.domain.model.TeacherModel
 import tj.msu.presentation.components.DaySelector
 import tj.msu.presentation.components.LessonItem
+import tj.msu.presentation.components.NextWeekButton
 import java.time.LocalDate
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
@@ -70,6 +71,18 @@ fun TeachersScreen(
             }
         )
 
+        Box(
+            modifier = Modifier
+                .fillMaxWidth(),
+            contentAlignment = Alignment.CenterEnd
+        ) {
+            NextWeekButton(
+                isVisible = state.isNextWeekAvailable,
+                isNextWeek = state.isNextWeek,
+                onClick = { viewModel.setEvent(TeachersEvent.OnToggleNextWeek) }
+            )
+        }
+
         if (state.isLoading) {
             Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 CircularProgressIndicator()
@@ -78,8 +91,22 @@ fun TeachersScreen(
             val teacher = state.selectedTeacher
             if (teacher != null) {
 
+
+                val teacherDates = teacher.days.mapNotNull { it.date }.filter { it.isNotBlank() }
+                val dates = if (teacherDates.size >= 7) teacherDates else state.weekDates
+                
+                val hasLessonsList = remember(teacher.days) {
+                    (0..6).map { dayIndex ->
+                        val daySchedule = teacher.days.find { it.dayIndex == dayIndex }
+                        val lessons = daySchedule?.lessons ?: emptyList()
+                        lessons.isNotEmpty() && lessons.any { it.type != tj.msu.domain.model.LessonType.WINDOW }
+                    }
+                }
+
                 DaySelector(
                     selectedDayIndex = pagerState.currentPage,
+                    displayedDates = dates,
+                    hasLessons = hasLessonsList,
                     onDaySelected = { index ->
 
                         scope.launch {
@@ -99,7 +126,9 @@ fun TeachersScreen(
                     val daySchedule = teacher.days.find { it.dayIndex == pageIndex }
                     val lessons = daySchedule?.lessons ?: emptyList()
 
-                    if (lessons.isNotEmpty()) {
+                    val isTrulyEmpty = lessons.isEmpty() || lessons.all { it.type == tj.msu.domain.model.LessonType.WINDOW }
+
+                    if (!isTrulyEmpty) {
                         LazyColumn(
                             modifier = Modifier.fillMaxSize(),
                             contentPadding = PaddingValues(bottom = 16.dp)
