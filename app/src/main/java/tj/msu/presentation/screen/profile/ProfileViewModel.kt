@@ -35,6 +35,13 @@ class ProfileViewModel(
                 }
             }
 
+            is ProfileEvent.OnToggleSmartFreeRooms -> {
+                viewModelScope.launch {
+                    userPrefs.setSmartFreeRooms(event.isEnabled)
+                    setState { copy(isSmartFreeRooms = event.isEnabled) }
+                }
+            }
+
             is ProfileEvent.OnUpdateGroup -> updateGroup(event.facultyCode, event.course)
         }
     }
@@ -56,7 +63,8 @@ class ProfileViewModel(
                             email = profile.email,
                             facultyCode = profile.facultyCode,
                             course = profile.course,
-                            isExpandableFreeRooms = localSettings?.isExpandableFreeRooms ?: true
+                            isExpandableFreeRooms = localSettings?.isExpandableFreeRooms ?: true,
+                            isSmartFreeRooms = localSettings?.isSmartFreeRooms ?: false
                         )
                     }
                 } else {

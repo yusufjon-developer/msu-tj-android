@@ -18,7 +18,10 @@ data class FreeRoomsState(
     val error: String? = null,
     val isNextWeek: Boolean = false,
     val weekDates: List<String> = emptyList(),
-    val isNextWeekAvailable: Boolean = false
+    val isNextWeekAvailable: Boolean = false,
+    val isSmartFreeRooms: Boolean = false,
+    val selectedFaculty: String = "",
+    val selectedCourse: Int = 0
 ) : UiState
 
 sealed interface FreeRoomsEvent : UiEvent {

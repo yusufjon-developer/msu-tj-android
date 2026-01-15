@@ -22,7 +22,9 @@ data class ScheduleState(
     val courses: List<Int> = listOf(1, 2, 3, 4),
     val isNextWeek: Boolean = false,
     val weekDates: List<String> = emptyList(),
-    val isNextWeekAvailable: Boolean = false
+    val isNextWeekAvailable: Boolean = false,
+    val isSmartFreeRooms: Boolean = false,
+    val isExpandableFreeRooms: Boolean = false
 ) : UiState
 
 sealed interface ScheduleEvent : UiEvent {

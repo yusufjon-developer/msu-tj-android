@@ -136,6 +136,7 @@ fun TeachersScreen(
                             items(lessons) { lesson ->
                                 LessonItem(
                                     lesson = lesson,
+                                    isExpandable = state.isExpandableFreeRooms,
                                     onClick = { }
                                 )
                             }

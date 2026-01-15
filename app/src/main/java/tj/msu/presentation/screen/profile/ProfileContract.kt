@@ -12,6 +12,7 @@ data class ProfileState(
     val facultyCode: String = "",
     val course: Int = 0,
     val isExpandableFreeRooms: Boolean = true,
+    val isSmartFreeRooms: Boolean = false,
 
     val faculties: Map<String, String> = mapOf(
         "pmi" to "ПМИ",
@@ -28,6 +29,7 @@ sealed interface ProfileEvent : UiEvent {
     data object LoadProfile : ProfileEvent
     data object OnLogout : ProfileEvent
     data class OnToggleLayout(val isExpandable: Boolean) : ProfileEvent
+    data class OnToggleSmartFreeRooms(val isEnabled: Boolean) : ProfileEvent
     data class OnUpdateGroup(val facultyCode: String, val course: Int) : ProfileEvent
 }
 

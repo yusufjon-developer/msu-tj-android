@@ -146,6 +146,7 @@ fun ScheduleScreen(
                         ) { lesson ->
                             LessonItem(
                                 lesson = lesson,
+                                isExpandable = state.isExpandableFreeRooms,
                                 onClick = {
                                     if (lesson.type != LessonType.WINDOW) {
                                         viewModel.setEvent(ScheduleEvent.OnLessonClick(lesson.title))

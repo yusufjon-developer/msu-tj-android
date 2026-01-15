@@ -27,6 +27,9 @@ val TextCredit = Color(0xFF006064)
 val BadgeConsultation = Color(0xFFFFF8E1)
 val TextConsultation = Color(0xFFFF8F00)
 
+val BadgeStream = Color(0xFFE1F5FE)
+val TextStream = Color(0xFF0277BD)
+
 val WindowBackground = Color(0xFFF0F0F0)
 val WindowText = Color(0xFF9E9E9E)
 

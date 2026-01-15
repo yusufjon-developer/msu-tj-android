@@ -4,5 +4,6 @@ data class UserLocalProfile(
     val name: String = "",
     val facultyCode: String = "",
     val course: Int = 0,
-    val isExpandableFreeRooms: Boolean = true
+    val isExpandableFreeRooms: Boolean = true,
+    val isSmartFreeRooms: Boolean = false
 )

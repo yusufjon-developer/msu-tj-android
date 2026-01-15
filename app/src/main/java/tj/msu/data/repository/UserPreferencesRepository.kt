@@ -22,6 +22,7 @@ class UserPreferencesRepository(
         val FACULTY = stringPreferencesKey("user_faculty")
         val COURSE = intPreferencesKey("user_course")
         val IS_EXPANDABLE_FREE_ROOMS = booleanPreferencesKey("is_expandable_free_rooms")
+        val IS_SMART_FREE_ROOMS = booleanPreferencesKey("is_smart_free_rooms")
     }
 
     val userProfile: Flow<UserLocalProfile?> = dataStore.data.map { prefs ->
@@ -29,13 +30,15 @@ class UserPreferencesRepository(
         val course = prefs[Keys.COURSE]
         val name = prefs[Keys.NAME]
         val isExpandable = prefs[Keys.IS_EXPANDABLE_FREE_ROOMS] ?: true
+        val isSmart = prefs[Keys.IS_SMART_FREE_ROOMS] ?: false
 
         if (faculty != null && course != null) {
             UserLocalProfile(
                 name = name ?: "",
                 facultyCode = faculty,
                 course = course,
-                isExpandableFreeRooms = isExpandable
+                isExpandableFreeRooms = isExpandable,
+                isSmartFreeRooms = isSmart
             )
         } else {
             null
@@ -53,6 +56,12 @@ class UserPreferencesRepository(
     suspend fun setFreeRoomsLayout(isExpandable: Boolean) {
         dataStore.edit { prefs ->
             prefs[Keys.IS_EXPANDABLE_FREE_ROOMS] = isExpandable
+        }
+    }
+
+    suspend fun setSmartFreeRooms(isEnabled: Boolean) {
+        dataStore.edit { prefs ->
+            prefs[Keys.IS_SMART_FREE_ROOMS] = isEnabled
         }
     }
 

@@ -2,6 +2,7 @@ package tj.msu.presentation.screen.freerooms
 
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.launch
@@ -40,7 +41,22 @@ class FreeRoomsViewModel(
         viewModelScope.launch {
             userPrefs.userProfile.collect { profile ->
                 if (profile != null) {
-                    setState { copy(isExpandableLayout = profile.isExpandableFreeRooms) }
+                    val needReload = profile.isSmartFreeRooms != currentState.isSmartFreeRooms ||
+                            profile.facultyCode != currentState.selectedFaculty ||
+                            profile.course != currentState.selectedCourse
+
+                    setState {
+                        copy(
+                            isExpandableLayout = profile.isExpandableFreeRooms,
+                            isSmartFreeRooms = profile.isSmartFreeRooms,
+                            selectedFaculty = profile.facultyCode,
+                            selectedCourse = profile.course
+                        )
+                    }
+
+                    if (needReload) {
+                        loadData()
+                    }
                 }
             }
         }
@@ -60,8 +76,10 @@ class FreeRoomsViewModel(
         }
     }
 
+    private var dataJob: Job? = null
     private fun loadData() {
-        viewModelScope.launch {
+        dataJob?.cancel()
+        dataJob = viewModelScope.launch {
             repository.getFreeRooms(currentState.isNextWeek)
                 .onStart { setState { copy(isLoading = true) } }
                 .catch { e -> setState { copy(isLoading = false, error = e.message) } }
