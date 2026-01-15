@@ -39,4 +39,6 @@ interface AuthRepository {
     fun subscribeToGroupNotifications(faculty: String, course: Int)
 
     fun unsubscribeFromGroupNotifications(faculty: String, course: Int)
+
+    suspend fun getAppInfo(): Result<tj.msu.domain.model.AppInfo>
 }

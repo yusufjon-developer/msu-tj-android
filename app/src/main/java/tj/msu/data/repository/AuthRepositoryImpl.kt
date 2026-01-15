@@ -206,4 +206,20 @@ class AuthRepositoryImpl(
         firebaseAuth.signOut()
         try { googleSignInClient.signOut() } catch (_: Exception) {}
     }
+
+    override suspend fun getAppInfo(): Result<tj.msu.domain.model.AppInfo> {
+        return try {
+            val snapshot = db.getReference("app_info").get().await()
+            
+            val info = tj.msu.domain.model.AppInfo(
+                latestVersion = snapshot.child("latest_version").getValue(String::class.java) ?: "",
+                forceUpdate = snapshot.child("force_update").getValue(Boolean::class.java) ?: false,
+                url = snapshot.child("url").getValue(String::class.java) ?: "",
+                changelog = snapshot.child("changelog").getValue(String::class.java) ?: ""
+            )
+            Result.success(info)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
 }

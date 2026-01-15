@@ -159,8 +159,7 @@ class TeachersViewModel(
             val updatedDays = teacher.days.map { day ->
                 val dayLessons = day.lessons
                 if (dayLessons.isEmpty()) return@map day
-                
-                // Identify active pairs (not WINDOW)
+
                 val activeIndices = dayLessons.mapIndexedNotNull { index, lesson ->
                     if (lesson.type != LessonType.WINDOW) index + 1 else null
                 }

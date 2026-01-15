@@ -43,7 +43,7 @@ fun NextWeekButton(
                 .background(backgroundColor)
                 .clickable(
                     interactionSource = remember { MutableInteractionSource() },
-                    indication = null, // Custom ripple or none as per design impl, standard clickable is fine usually but request implied custom transition
+                    indication = null,
                     onClick = onClick
                 )
                 .padding(horizontal = 12.dp, vertical = 8.dp)

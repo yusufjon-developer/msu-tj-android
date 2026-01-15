@@ -157,11 +157,6 @@ class ScheduleViewModel(
         for (dayIndex in 0..6) {
             val dayLessons = lessonsByDay[dayIndex] ?: emptyList()
             if (dayLessons.isEmpty()) continue
-
-            // 1) Identify pairs that have ACTUAL classes (not WINDOW)
-            // But verify mapping: does getDailySchedule return WINDOW lessons?
-            // Yes, ScheduleMapper has `createWindowLesson`.
-            // So we can assume `dayLessons` has 5 items usually.
             
             val activeLessonIndices = dayLessons.mapIndexedNotNull { index, lesson ->
                 if (lesson.type != tj.msu.domain.model.LessonType.WINDOW) index + 1 else null
@@ -169,41 +164,27 @@ class ScheduleViewModel(
             
             val minPair = activeLessonIndices.minOrNull() ?: -1
             val maxPair = activeLessonIndices.maxOrNull() ?: -1
-            
-            // 1-based pair indices to show free rooms for: min-1, max+1, and any gaps in between
+
             val pairsToShowFreeRooms = mutableSetOf<Int>()
             
             if (minPair != -1) {
-                // One before
                 if (minPair > 1) pairsToShowFreeRooms.add(minPair - 1)
-                // One after
                 if (maxPair < 5) pairsToShowFreeRooms.add(maxPair + 1)
-                
-                // Gaps in between? 
-                // "Shows list of free rooms... so not to go to free rooms screen"
-                // Usually implied for gaps too. The "One before/after" is specifically for edges.
+
                 for (p in (minPair + 1) until maxPair) {
                      if (!activeLessonIndices.contains(p)) {
                          pairsToShowFreeRooms.add(p)
                      }
                 }
             } else {
-                // If NO classes at all... Requirement: "if in that day there are classes".
-                // If no classes, user said "show free rooms in one pair before... enable it via profile".
-                // User said "if in that day there are classes".
-                // So if NO classes, do we show nothing? Or all?
-                // "if in that day there are classes" implies strict condition.
-                // If the day is completely empty, we probably don't show anything special in Schedule (it just says "No classes").
-                                
-                // However, ScheduleMapper produces 5 WINDOW lessons if day exists in data but empty?
-                // actually `lessonsByDay` key might not exist if empty.
+
             }
 
             dayLessons.forEachIndexed { i, lesson ->
                 val pairNum = i + 1
                 if (pairsToShowFreeRooms.contains(pairNum) && lesson.type == tj.msu.domain.model.LessonType.WINDOW) {
                     
-                    val dayKey = (dayIndex + 1).toString() // keys "1".."7"
+                    val dayKey = (dayIndex + 1).toString()
                     val pairKey = pairNum.toString()
                     val rooms = freeRoomsSchedule[dayKey]?.get(pairKey) ?: emptyList()
 

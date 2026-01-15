@@ -4,15 +4,15 @@ import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.offset
-import androidx.compose.foundation.layout.size
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.MaterialTheme
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -52,25 +52,110 @@ fun SplashScreen(
         animationSpec = tween(durationMillis = 1000)
     )
 
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background),
-        contentAlignment = Alignment.Center
-    ) {
-        CircularProgressIndicator(
-            modifier = Modifier
-                .size(48.dp)
-                .offset(y = loaderOffset),
-            color = MsuBlue
-        )
+    if (state.updateInfo != null) {
+        val info = state.updateInfo!!
+        val uriHandler = LocalUriHandler.current
+        val scrollState = androidx.compose.foundation.rememberScrollState()
 
-        Image(
-            painter = painterResource(id = tj.msu.R.drawable.ic_launcher_foreground),
-            contentDescription = "Logo",
+        Surface(
+            modifier = Modifier.fillMaxSize(),
+            color = MaterialTheme.colorScheme.surface
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(24.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Spacer(modifier = Modifier.height(48.dp))
+                
+                Image(
+                    painter = painterResource(id = tj.msu.R.drawable.ic_launcher_foreground),
+                    contentDescription = "Logo",
+                    modifier = Modifier.size(100.dp)
+                )
+                
+                Spacer(modifier = Modifier.height(32.dp))
+
+                Text(
+                    text = "Доступна новая версия\n${info.latestVersion}",
+                    style = MaterialTheme.typography.headlineMedium,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                    fontWeight = androidx.compose.ui.text.font.FontWeight.Bold
+                )
+
+                Spacer(modifier = Modifier.height(24.dp))
+
+                Text(
+                    text = "Список изменений:",
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold,
+                    modifier = Modifier.align(Alignment.Start)
+                )
+                
+                Spacer(modifier = Modifier.height(8.dp))
+
+                Text(
+                    text = info.changelog.ifBlank { "Исправления ошибок и улучшения производительности." },
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxWidth()
+                        .verticalScroll(scrollState)
+                )
+
+                Spacer(modifier = Modifier.height(24.dp))
+
+                Button(
+                    onClick = { uriHandler.openUri(info.url) },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(50.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = MsuBlue),
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    Text("Обновить сейчас", style = MaterialTheme.typography.titleMedium)
+                }
+
+                if (!info.forceUpdate) {
+                    Spacer(modifier = Modifier.height(16.dp))
+                    TextButton(
+                        onClick = { viewModel.setEvent(SplashEvent.OnSkipUpdate) },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(50.dp)
+                    ) {
+                        Text("Обновить позже", color = Color.Gray, style = MaterialTheme.typography.titleMedium)
+                    }
+                }
+                
+                Spacer(modifier = Modifier.height(24.dp))
+            }
+        }
+    } else {
+        Box(
             modifier = Modifier
-                .size(150.dp)
-                .offset(y = logoOffset)
-        )
+                .fillMaxSize()
+                .background(MaterialTheme.colorScheme.background),
+            contentAlignment = Alignment.Center
+        ) {
+            CircularProgressIndicator(
+                modifier = Modifier
+                    .size(48.dp)
+                    .offset(y = loaderOffset),
+                color = MsuBlue
+            )
+
+            Image(
+                painter = painterResource(id = tj.msu.R.drawable.ic_launcher_foreground),
+                contentDescription = "Logo",
+                modifier = Modifier
+                    .size(150.dp)
+                    .offset(y = logoOffset)
+            )
+        }
     }
 }

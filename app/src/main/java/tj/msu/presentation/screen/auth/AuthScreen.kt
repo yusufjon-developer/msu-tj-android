@@ -217,7 +217,6 @@ fun AuthScreen(
                     }
 
                 } else {
-                    // Role Selection
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()

@@ -1,15 +1,18 @@
 package tj.msu.presentation.screen.splash
 
+import tj.msu.domain.model.AppInfo
 import tj.msu.presentation.core.base.UiEffect
 import tj.msu.presentation.core.base.UiEvent
 import tj.msu.presentation.core.base.UiState
 
 data class SplashState(
-    val isLoading: Boolean = true
+    val isLoading: Boolean = true,
+    val updateInfo: AppInfo? = null
 ) : UiState
 
 sealed interface SplashEvent : UiEvent {
     data object StartLoading : SplashEvent
+    data object OnSkipUpdate : SplashEvent
 }
 
 sealed interface SplashEffect : UiEffect {

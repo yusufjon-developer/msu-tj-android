@@ -43,8 +43,8 @@ fun DaySelector(
             
             val contentColor = when {
                 isSelected -> Color.White
-                !dayHasLessons -> TextPractice.copy(alpha = 0.6f)
-                else -> Color.Gray
+                !dayHasLessons -> Color.Gray
+                else -> TextPractice.copy(alpha = 0.6f)
             }
 
             val textToShow = if (isSelected) {
