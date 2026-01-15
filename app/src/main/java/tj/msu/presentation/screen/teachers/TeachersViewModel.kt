@@ -4,9 +4,12 @@ package tj.msu.presentation.screen.teachers
 
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
 import org.koin.android.annotation.KoinViewModel
 import tj.msu.data.repository.UserPreferencesRepository
+import tj.msu.domain.model.FreeRooms
+import tj.msu.domain.model.LessonType
 import tj.msu.domain.model.TeacherModel
 import tj.msu.domain.repository.TeacherRepository
 import tj.msu.presentation.core.base.MVIViewModel
@@ -28,6 +31,7 @@ class TeachersViewModel(
             }
         }
         observeSettings()
+        setEvent(TeachersEvent.LoadData)
     }
     
     private fun observeSettings() {
@@ -37,10 +41,36 @@ class TeachersViewModel(
                      val isSmart = profile.isSmartFreeRooms
                      val isExpandable = profile.isExpandableFreeRooms
                      
-                     if (isSmart != currentState.isSmartFreeRooms || isExpandable != currentState.isExpandableFreeRooms) {
+                     var targetName: String? = null
+                     if (profile.role == "teacher") {
+                         fun getInitial(name: String): String {
+                             if (name.isBlank()) return ""
+                             val trimmed = name.trim()
+                             if (trimmed.length >= 2 && trimmed.substring(0, 2).equals("Дж", ignoreCase = true)) {
+                                 return "Дж."
+                             }
+                             return trimmed.first().toString() + "."
+                         }
+
+                         val f = getInitial(profile.firstName)
+                         val p = getInitial(profile.patronymic)
+                         targetName = "${profile.surname} $f$p".trim()
+                     }
+
+                     if (isSmart != currentState.isSmartFreeRooms || 
+                         isExpandable != currentState.isExpandableFreeRooms ||
+                         targetName != currentState.targetTeacherName
+                     ) {
                          val smartChanged = isSmart != currentState.isSmartFreeRooms
-                         setState { copy(isSmartFreeRooms = isSmart, isExpandableFreeRooms = isExpandable) }
-                         if (smartChanged) loadTeachers()
+                         val targetChanged = targetName != currentState.targetTeacherName
+                         
+                         setState { copy(
+                             isSmartFreeRooms = isSmart, 
+                             isExpandableFreeRooms = isExpandable,
+                             targetTeacherName = targetName
+                         ) }
+                         
+                         if (smartChanged || targetChanged) loadTeachers()
                      }
                  }
              }
@@ -78,7 +108,7 @@ class TeachersViewModel(
                 val teachersFlow = repository.getTeachers(currentState.isNextWeek)
                 val freeRoomsFlow = scheduleRepository.getFreeRooms(currentState.isNextWeek)
                 
-                kotlinx.coroutines.flow.combine(teachersFlow, freeRoomsFlow) { teachers: List<TeacherModel>, freeRooms: tj.msu.domain.model.FreeRooms ->
+                combine(teachersFlow, freeRoomsFlow) { teachers: List<TeacherModel>, freeRooms: FreeRooms ->
                      if (currentState.isSmartFreeRooms) {
                          processTeachersWithFreeRooms(teachers, freeRooms.schedule)
                      } else {
@@ -91,12 +121,18 @@ class TeachersViewModel(
                 }
                 .collect { incomingTeachers ->
                     setState {
-    
-                        val updatedSelectedTeacher = if (selectedTeacher != null) {
-                            incomingTeachers.find { it.id == selectedTeacher.id }
-                                ?: incomingTeachers.firstOrNull()
+                        val target = currentState.targetTeacherName
+                        
+                        val updatedSelectedTeacher = if (target != null) {
+                            incomingTeachers.find { it.name.trim().equals(target, ignoreCase = true) }
+                                ?: TeacherModel(id = "fake", name = target, days = emptyList())
                         } else {
-                            incomingTeachers.firstOrNull()
+                            if (selectedTeacher != null) {
+                                incomingTeachers.find { it.id == selectedTeacher.id }
+                                    ?: incomingTeachers.firstOrNull()
+                            } else {
+                                incomingTeachers.firstOrNull()
+                            }
                         }
     
                         copy(
@@ -126,7 +162,7 @@ class TeachersViewModel(
                 
                 // Identify active pairs (not WINDOW)
                 val activeIndices = dayLessons.mapIndexedNotNull { index, lesson ->
-                    if (lesson.type != tj.msu.domain.model.LessonType.WINDOW) index + 1 else null
+                    if (lesson.type != LessonType.WINDOW) index + 1 else null
                 }
                 
                 val minPair = activeIndices.minOrNull() ?: -1
@@ -143,7 +179,7 @@ class TeachersViewModel(
                 
                 val mergedLessons = dayLessons.mapIndexed { index, lesson ->
                     val pairNum = index + 1
-                    if (pairsToShow.contains(pairNum) && lesson.type == tj.msu.domain.model.LessonType.WINDOW) {
+                    if (pairsToShow.contains(pairNum) && lesson.type == LessonType.WINDOW) {
                         val dayKey = (day.dayIndex + 1).toString()
                         val pairKey = pairNum.toString()
                         val rooms = freeRoomsSchedule[dayKey]?.get(pairKey) ?: emptyList()

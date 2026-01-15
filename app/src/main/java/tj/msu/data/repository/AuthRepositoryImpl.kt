@@ -50,7 +50,10 @@ class AuthRepositoryImpl(
     override suspend fun signUpWithEmail(
         email: String,
         pass: String,
-        name: String,
+        surname: String,
+        firstName: String,
+        patronymic: String,
+        role: String,
         faculty: String,
         course: Int
     ): Result<Unit> {
@@ -58,7 +61,7 @@ class AuthRepositoryImpl(
             val authResult = firebaseAuth.createUserWithEmailAndPassword(email, pass).await()
             val uid = authResult.user?.uid ?: throw Exception("User ID not found")
 
-            saveUserProfile(uid, name, faculty, course).getOrThrow()
+            saveUserProfile(uid, surname, firstName, patronymic, role, faculty, course).getOrThrow()
 
             Result.success(Unit)
         } catch (e: Exception) {
@@ -66,14 +69,44 @@ class AuthRepositoryImpl(
         }
     }
 
-    override suspend fun saveUserProfile(uid: String, name: String, faculty: String, course: Int): Result<Unit> {
+    override suspend fun saveUserProfile(
+        uid: String, 
+        surname: String, 
+        firstName: String, 
+        patronymic: String, 
+        role: String, 
+        faculty: String, 
+        course: Int
+    ): Result<Unit> {
         return try {
-            val userProfile = UserProfileDto(id = uid, name = name, email = firebaseAuth.currentUser?.email ?: "", facultyCode = faculty, course = course)
-            db.getReference("users").child(uid).setValue(userProfile).await()
+            val fullName = "$surname $firstName $patronymic".trim()
+            val userProfile = UserProfileDto(
+                id = uid, 
+                name = fullName, 
+                surname = surname,
+                firstName = firstName,
+                patronymic = patronymic,
+                role = role,
+                email = firebaseAuth.currentUser?.email ?: "", 
+                facultyCode = faculty, 
+                course = course
+            )
+            
+            firebaseFirestore.collection("users").document(uid).set(userProfile).await()
 
-            userPrefs.saveUserSelection(name, faculty, course)
+            userPrefs.saveUserSelection(fullName, surname, firstName, patronymic, role, faculty, course)
 
-            subscribeToGroupNotifications(faculty, course)
+            if (role == "student") {
+                subscribeToGroupNotifications(faculty, course)
+            } else if (role == "teacher") {
+                firebaseMessaging.subscribeToTopic("teachers")
+                
+                val user = firebaseAuth.currentUser
+                if (user != null) {
+                   firebaseFirestore.collection("users").document(user.uid)
+                       .update("subscribedTopics", FieldValue.arrayUnion("teachers"))
+                }
+            }
 
             Result.success(Unit)
         } catch (e: Exception) {
@@ -113,11 +146,19 @@ class AuthRepositoryImpl(
 
     override suspend fun getUserProfile(uid: String): Result<UserProfileDto?> {
         return try {
-            val snapshot = db.getReference("users").child(uid).get().await()
-            val profile = snapshot.getValue(UserProfileDto::class.java)
+            val snapshot = firebaseFirestore.collection("users").document(uid).get().await()
+            val profile = snapshot.toObject(UserProfileDto::class.java)
 
             if (profile != null) {
-                userPrefs.saveUserSelection(profile.name, profile.facultyCode, profile.course)
+                userPrefs.saveUserSelection(
+                    profile.name, 
+                    profile.surname, 
+                    profile.firstName, 
+                    profile.patronymic, 
+                    profile.role, 
+                    profile.facultyCode, 
+                    profile.course
+                )
             }
 
             Result.success(profile)

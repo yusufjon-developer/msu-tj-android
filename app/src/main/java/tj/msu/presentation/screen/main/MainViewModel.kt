@@ -22,6 +22,7 @@ class MainViewModel(
     init {
         observeAuthState()
         observeNotifications()
+        observeUserRole()
         viewModelScope.launch {
             authRepository.saveFcmToken()
         }
@@ -72,6 +73,14 @@ class MainViewModel(
                 } else {
                     setState { copy(unreadNotificationsCount = 0) }
                 }
+            }
+        }
+    }
+
+    private fun observeUserRole() {
+        viewModelScope.launch {
+            userPrefs.userProfile.collectLatest { profile ->
+                setState { copy(userRole = profile?.role ?: "student") }
             }
         }
     }

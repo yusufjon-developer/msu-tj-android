@@ -81,7 +81,10 @@ class MainActivity : ComponentActivity() {
                             }
                         }
 
-                        MainScreen(unreadNotificationsCount = state.unreadNotificationsCount)
+                        MainScreen(
+                            unreadNotificationsCount = state.unreadNotificationsCount,
+                            userRole = state.userRole
+                        )
                     }
                 }
             }

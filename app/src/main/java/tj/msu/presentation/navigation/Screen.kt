@@ -29,7 +29,7 @@ sealed class Screen(val route: String, val title: String, val icon: IconSource) 
 
     data object Teachers : Screen(
         "teachers",
-        "Преподаватели",
+        "Преподаватель",
         IconSource.Resource(R.drawable.ic_teacher)
     )
 

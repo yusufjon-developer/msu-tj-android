@@ -19,6 +19,10 @@ class UserPreferencesRepository(
 
     private object Keys {
         val NAME = stringPreferencesKey("user_name")
+        val SURNAME = stringPreferencesKey("user_surname")
+        val FIRST_NAME = stringPreferencesKey("user_first_name")
+        val PATRONYMIC = stringPreferencesKey("user_patronymic")
+        val ROLE = stringPreferencesKey("user_role")
         val FACULTY = stringPreferencesKey("user_faculty")
         val COURSE = intPreferencesKey("user_course")
         val IS_EXPANDABLE_FREE_ROOMS = booleanPreferencesKey("is_expandable_free_rooms")
@@ -28,15 +32,24 @@ class UserPreferencesRepository(
     val userProfile: Flow<UserLocalProfile?> = dataStore.data.map { prefs ->
         val faculty = prefs[Keys.FACULTY]
         val course = prefs[Keys.COURSE]
-        val name = prefs[Keys.NAME]
+        val name = prefs[Keys.NAME] ?: ""
+        val surname = prefs[Keys.SURNAME] ?: ""
+        val firstName = prefs[Keys.FIRST_NAME] ?: ""
+        val patronymic = prefs[Keys.PATRONYMIC] ?: ""
+        val role = prefs[Keys.ROLE] ?: "student"
+        
         val isExpandable = prefs[Keys.IS_EXPANDABLE_FREE_ROOMS] ?: true
         val isSmart = prefs[Keys.IS_SMART_FREE_ROOMS] ?: false
 
-        if (faculty != null && course != null) {
+        if (name.isNotBlank() || (surname.isNotBlank() && firstName.isNotBlank())) {
             UserLocalProfile(
-                name = name ?: "",
-                facultyCode = faculty,
-                course = course,
+                name = name,
+                surname = surname,
+                firstName = firstName,
+                patronymic = patronymic,
+                role = role,
+                facultyCode = faculty ?: "",
+                course = course ?: 0,
                 isExpandableFreeRooms = isExpandable,
                 isSmartFreeRooms = isSmart
             )
@@ -45,9 +58,21 @@ class UserPreferencesRepository(
         }
     }
 
-    suspend fun saveUserSelection(name: String, faculty: String, course: Int) {
+    suspend fun saveUserSelection(
+        name: String, 
+        surname: String, 
+        firstName: String, 
+        patronymic: String, 
+        role: String, 
+        faculty: String, 
+        course: Int
+    ) {
         dataStore.edit { prefs ->
             prefs[Keys.NAME] = name
+            prefs[Keys.SURNAME] = surname
+            prefs[Keys.FIRST_NAME] = firstName
+            prefs[Keys.PATRONYMIC] = patronymic
+            prefs[Keys.ROLE] = role
             prefs[Keys.FACULTY] = faculty
             prefs[Keys.COURSE] = course
         }

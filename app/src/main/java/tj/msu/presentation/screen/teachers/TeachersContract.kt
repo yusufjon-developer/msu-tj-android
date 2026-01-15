@@ -16,7 +16,8 @@ data class TeachersState(
     val weekDates: List<String> = emptyList(),
     val isNextWeekAvailable: Boolean = false,
     val isSmartFreeRooms: Boolean = false,
-    val isExpandableFreeRooms: Boolean = false
+    val isExpandableFreeRooms: Boolean = false,
+    val targetTeacherName: String? = null
 ) : UiState
 
 sealed class TeachersEvent : UiEvent {

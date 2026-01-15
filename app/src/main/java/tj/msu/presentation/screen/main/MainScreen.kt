@@ -35,16 +35,26 @@ import tj.msu.presentation.theme.MsuBlue
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MainScreen(
-    unreadNotificationsCount: Int
+    unreadNotificationsCount: Int,
+    userRole: String
 ) {
     val navController = rememberNavController()
 
-    val bottomNavScreens = listOf(
-        Screen.Schedule,
-        Screen.FreeRooms,
-        Screen.Teachers,
-        Screen.Profile
-    )
+    val bottomNavScreens = if (userRole == "teacher") {
+        listOf(
+            Screen.Teachers,
+            Screen.FreeRooms,
+            Screen.Schedule,
+            Screen.Profile
+        )
+    } else {
+        listOf(
+            Screen.Schedule,
+            Screen.FreeRooms,
+            Screen.Teachers,
+            Screen.Profile
+        )
+    }
 
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentDestination = navBackStackEntry?.destination
@@ -164,7 +174,7 @@ fun MainScreen(
     ) { innerPadding ->
         NavHost(
             navController = navController,
-            startDestination = Screen.Schedule.route,
+            startDestination = if (userRole == "teacher") Screen.Teachers.route else Screen.Schedule.route,
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding)

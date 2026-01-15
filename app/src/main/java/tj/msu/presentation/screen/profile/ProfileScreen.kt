@@ -42,9 +42,10 @@ fun ProfileScreen(
    
     val uriHandler = LocalUriHandler.current
    
-    val githubReleasesUrl = "https://github.com/yusufjon-developer/msu-tj-android/releases"
+    val githubReleasesUrl = "https://github.com/yusufjon-developer/msu-tj-android"
 
     var showEditSheet by remember { mutableStateOf(false) }
+    var showProfileEditSheet by remember { mutableStateOf(false) }
     val scrollState = rememberScrollState()
 
     LaunchedEffect(Unit) {
@@ -74,7 +75,8 @@ fun ProfileScreen(
             .fillMaxSize()
             .verticalScroll(scrollState)
             .background(MsuBackground)
-            .padding(16.dp),
+            .padding(16.dp)
+            .clickable { showProfileEditSheet = true},
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
 
@@ -258,7 +260,6 @@ fun ProfileScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .clickable {
-                       
                         uriHandler.openUri(githubReleasesUrl)
                     }
                     .padding(16.dp),
@@ -277,13 +278,13 @@ fun ProfileScreen(
                
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        text = "История обновлений",
+                        text = "О программе",
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
                         color = Color.Black
                     )
                     Text(
-                        text = "GitHub Releases",
+                        text = "GitHub",
                         style = MaterialTheme.typography.bodySmall,
                         color = Color.Gray
                     )
@@ -322,5 +323,82 @@ fun ProfileScreen(
         }
 
         Spacer(modifier = Modifier.height(16.dp))
+    }
+
+    if (showProfileEditSheet) {
+        EditProfileBottomSheet(
+            initialSurname = state.surname,
+            initialFirstName = state.firstName,
+            initialPatronymic = state.patronymic,
+            onApply = { s, f, p ->
+                viewModel.setEvent(ProfileEvent.OnUpdateProfile(s, f, p))
+                showProfileEditSheet = false
+            },
+            onDismiss = { showProfileEditSheet = false }
+        )
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun EditProfileBottomSheet(
+    initialSurname: String,
+    initialFirstName: String,
+    initialPatronymic: String,
+    onApply: (String, String, String) -> Unit,
+    onDismiss: () -> Unit
+) {
+    var surname by remember { mutableStateOf(initialSurname) }
+    var firstName by remember { mutableStateOf(initialFirstName) }
+    var patronymic by remember { mutableStateOf(initialPatronymic) }
+
+    ModalBottomSheet(onDismissRequest = onDismiss) {
+        Column(
+            modifier = Modifier
+                .padding(16.dp)
+                .padding(bottom = 32.dp)
+        ) {
+            Text(
+                text = "Редактирование профиля",
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Bold
+            )
+            Spacer(modifier = Modifier.height(16.dp))
+
+            OutlinedTextField(
+                value = surname,
+                onValueChange = { surname = it },
+                label = { Text("Фамилия") },
+                modifier = Modifier.fillMaxWidth(),
+                singleLine = true
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+
+            OutlinedTextField(
+                value = firstName,
+                onValueChange = { firstName = it },
+                label = { Text("Имя") },
+                modifier = Modifier.fillMaxWidth(),
+                singleLine = true
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+
+            OutlinedTextField(
+                value = patronymic,
+                onValueChange = { patronymic = it },
+                label = { Text("Отчество") },
+                modifier = Modifier.fillMaxWidth(),
+                singleLine = true
+            )
+            Spacer(modifier = Modifier.height(24.dp))
+
+            Button(
+                onClick = { onApply(surname, firstName, patronymic) },
+                modifier = Modifier.fillMaxWidth(),
+                colors = ButtonDefaults.buttonColors(containerColor = MsuBlue)
+            ) {
+                Text("Сохранить")
+            }
+        }
     }
 }

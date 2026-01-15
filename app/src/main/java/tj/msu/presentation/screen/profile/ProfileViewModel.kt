@@ -43,6 +43,7 @@ class ProfileViewModel(
             }
 
             is ProfileEvent.OnUpdateGroup -> updateGroup(event.facultyCode, event.course)
+            is ProfileEvent.OnUpdateProfile -> updateProfile(event.surname, event.firstName, event.patronymic)
         }
     }
 
@@ -60,6 +61,10 @@ class ProfileViewModel(
                         copy(
                             isLoading = false,
                             name = profile.name,
+                            surname = profile.surname,
+                            firstName = profile.firstName,
+                            patronymic = profile.patronymic,
+                            role = profile.role,
                             email = profile.email,
                             facultyCode = profile.facultyCode,
                             course = profile.course,
@@ -88,7 +93,10 @@ class ProfileViewModel(
 
             val result = authRepository.saveUserProfile(
                 uid = user.uid,
-                name = currentState.name,
+                surname = currentState.surname,
+                firstName = currentState.firstName,
+                patronymic = currentState.patronymic,
+                role = currentState.role,
                 faculty = faculty,
                 course = course
             )
@@ -102,6 +110,40 @@ class ProfileViewModel(
                     )
                 }
                 setEffect { ProfileEffect.ShowToast("Данные обновлены") }
+            }.onFailure { e ->
+                setState { copy(isLoading = false) }
+                setEffect { ProfileEffect.ShowToast("Ошибка: ${e.localizedMessage}") }
+            }
+        }
+    }
+
+    private fun updateProfile(surname: String, firstName: String, patronymic: String) {
+        val user = authRepository.currentUser ?: return
+
+        viewModelScope.launch {
+            setState { copy(isLoading = true) }
+
+            val result = authRepository.saveUserProfile(
+                uid = user.uid,
+                surname = surname,
+                firstName = firstName,
+                patronymic = patronymic,
+                role = currentState.role,
+                faculty = currentState.facultyCode,
+                course = currentState.course
+            )
+
+            result.onSuccess {
+                setState {
+                    copy(
+                        isLoading = false,
+                        surname = surname,
+                        firstName = firstName,
+                        patronymic = patronymic,
+                        name = "$surname $firstName $patronymic".trim()
+                    )
+                }
+                setEffect { ProfileEffect.ShowToast("Данные профиля обновлены") }
             }.onFailure { e ->
                 setState { copy(isLoading = false) }
                 setEffect { ProfileEffect.ShowToast("Ошибка: ${e.localizedMessage}") }
