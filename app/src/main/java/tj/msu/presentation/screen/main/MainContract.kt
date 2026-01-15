@@ -7,7 +7,8 @@ import tj.msu.presentation.core.base.UiState
 data class MainState(
     val isLoading: Boolean = true,
     val isAuthorized: Boolean = false,
-    val unreadNotificationsCount: Int = 0
+    val unreadNotificationsCount: Int = 0,
+    val userRole: String = "student"
 ) : UiState
 
 sealed interface MainEvent : UiEvent {

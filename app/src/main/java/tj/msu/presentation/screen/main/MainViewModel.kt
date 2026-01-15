@@ -1,6 +1,7 @@
 package tj.msu.presentation.screen.main
 
 import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import org.koin.android.annotation.KoinViewModel
@@ -21,6 +22,7 @@ class MainViewModel(
     init {
         observeAuthState()
         observeNotifications()
+        observeUserRole()
         viewModelScope.launch {
             authRepository.saveFcmToken()
         }
@@ -56,12 +58,29 @@ class MainViewModel(
     }
 
     private fun observeNotifications() {
-        val user = authRepository.currentUser ?: return
-
         viewModelScope.launch {
-            notificationRepository.getNotifications(user.uid).collectLatest { list ->
-                val count = list.count { !it.isRead }
-                setState { copy(unreadNotificationsCount = count) }
+            authRepository.authState.collectLatest { user ->
+                if (user != null) {
+                    notificationRepository.getNotifications(user.uid)
+                        .catch { e ->
+
+                            e.printStackTrace()
+                        }
+                        .collect { list ->
+                            val count = list.count { !it.isRead }
+                            setState { copy(unreadNotificationsCount = count) }
+                        }
+                } else {
+                    setState { copy(unreadNotificationsCount = 0) }
+                }
+            }
+        }
+    }
+
+    private fun observeUserRole() {
+        viewModelScope.launch {
+            userPrefs.userProfile.collectLatest { profile ->
+                setState { copy(userRole = profile?.role ?: "student") }
             }
         }
     }
@@ -77,9 +96,10 @@ class MainViewModel(
             is MainEvent.CheckAuth -> {
                 val user = authRepository.currentUser
                 if (user != null) {
+                    setState { copy(isLoading = true) }
                     checkUserProfile(user.uid)
                 } else {
-                    setState { copy(isAuthorized = false) }
+                    setState { copy(isAuthorized = false, isLoading = false) }
                 }
             }
         }

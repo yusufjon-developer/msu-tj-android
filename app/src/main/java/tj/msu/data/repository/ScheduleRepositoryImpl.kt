@@ -21,8 +21,9 @@ class ScheduleRepositoryImpl : ScheduleRepository {
 
     private val database = FirebaseDatabase.getInstance()
 
-    override fun getDailySchedule(groupId: String): Flow<List<Lesson>> = callbackFlow {
-        val myRef = database.getReference("schedules").child(groupId)
+    override fun getDailySchedule(groupId: String, isNextWeek: Boolean): Flow<List<Lesson>> = callbackFlow {
+        val path = if (isNextWeek) "schedules_next" else "schedules"
+        val myRef = database.getReference(path).child(groupId)
 
         val listener = object : ValueEventListener {
             override fun onDataChange(snapshot: DataSnapshot) {
@@ -44,8 +45,9 @@ class ScheduleRepositoryImpl : ScheduleRepository {
         awaitClose { myRef.removeEventListener(listener) }
     }
 
-    override fun getFreeRooms(): Flow<FreeRooms> = callbackFlow {
-        val ref = database.getReference("free_rooms")
+    override fun getFreeRooms(isNextWeek: Boolean): Flow<FreeRooms> = callbackFlow {
+        val path = if (isNextWeek) "free_rooms_next" else "free_rooms"
+        val ref = database.getReference(path)
 
         val listener = object : ValueEventListener {
             override fun onDataChange(snapshot: DataSnapshot) {
@@ -56,6 +58,40 @@ class ScheduleRepositoryImpl : ScheduleRepository {
                 } catch (e: Exception) {
                     trySend(FreeRooms())
                 }
+            }
+
+            override fun onCancelled(error: DatabaseError) {
+                close(error.toException())
+            }
+        }
+
+        ref.addValueEventListener(listener)
+        awaitClose { ref.removeEventListener(listener) }
+    }
+
+    override fun checkNextWeekScheduleAvailability(groupId: String): Flow<Boolean> = callbackFlow {
+        val ref = database.getReference("schedules_next").child(groupId)
+
+        val listener = object : ValueEventListener {
+            override fun onDataChange(snapshot: DataSnapshot) {
+                trySend(snapshot.exists())
+            }
+
+            override fun onCancelled(error: DatabaseError) {
+                close(error.toException())
+            }
+        }
+
+        ref.addValueEventListener(listener)
+        awaitClose { ref.removeEventListener(listener) }
+    }
+
+    override fun checkNextWeekFreeRoomsAvailability(): Flow<Boolean> = callbackFlow {
+        val ref = database.getReference("free_rooms_next")
+
+        val listener = object : ValueEventListener {
+            override fun onDataChange(snapshot: DataSnapshot) {
+                trySend(snapshot.exists())
             }
 
             override fun onCancelled(error: DatabaseError) {

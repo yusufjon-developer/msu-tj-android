@@ -21,7 +21,15 @@ class AuthViewModel(
         when (event) {
             is AuthEvent.OnEmailChange -> setState { copy(email = event.email, error = null) }
             is AuthEvent.OnPassChange -> setState { copy(pass = event.pass, error = null) }
-            is AuthEvent.OnNameChange -> setState { copy(name = event.name, error = null) }
+            
+            is AuthEvent.OnSurnameChange -> setState { copy(surname = event.value, error = null) }
+            is AuthEvent.OnFirstNameChange -> setState { copy(firstName = event.value, error = null) }
+            is AuthEvent.OnPatronymicChange -> setState { copy(patronymic = event.value, error = null) }
+            is AuthEvent.OnTogglePatronymicVisibility -> setState { 
+                copy(hasNoPatronymic = event.isHidden, patronymic = if (event.isHidden) "" else patronymic, error = null) 
+            }
+            is AuthEvent.OnRoleChange -> setState { copy(selectedRole = event.role, error = null) }
+
             is AuthEvent.OnFacultyChange -> setState { copy(selectedFacultyCode = event.code) }
             is AuthEvent.OnCourseChange -> setState { copy(selectedCourse = event.course) }
             is AuthEvent.OnToggleMode -> setState { copy(isLoginMode = !isLoginMode, error = null, currentStep = AuthStep.CREDENTIALS) }
@@ -47,8 +55,8 @@ class AuthViewModel(
                 setState { copy(currentStep = AuthStep.PROFILE_INFO, error = null) }
             }
         } else {
-            if (state.name.isBlank()) {
-                setState { copy(error = "Введите ваше имя") }
+            if (state.surname.isBlank() || state.firstName.isBlank()) {
+                setState { copy(error = "Введите Фамилию и Имя") }
                 return
             }
             performFullRegistration()
@@ -73,7 +81,10 @@ class AuthViewModel(
             val result = if (currentUser != null) {
                 repository.saveUserProfile(
                     uid = currentUser.uid,
-                    name = state.name,
+                    surname = state.surname,
+                    firstName = state.firstName,
+                    patronymic = state.patronymic,
+                    role = state.selectedRole,
                     faculty = state.selectedFacultyCode,
                     course = state.selectedCourse
                 )
@@ -81,7 +92,10 @@ class AuthViewModel(
                 repository.signUpWithEmail(
                     email = state.email,
                     pass = state.pass,
-                    name = state.name,
+                    surname = state.surname,
+                    firstName = state.firstName,
+                    patronymic = state.patronymic,
+                    role = state.selectedRole,
                     faculty = state.selectedFacultyCode,
                     course = state.selectedCourse
                 )
@@ -115,12 +129,16 @@ class AuthViewModel(
                 setEffect { AuthEffect.NavigateToMain }
             } else {
                 val googleName = repository.currentUser?.displayName ?: ""
+                val nameParts = googleName.split(" ")
+                val firstName = nameParts.getOrNull(0) ?: ""
+                val surname = nameParts.getOrNull(1) ?: ""
 
                 setState {
                     copy(
                         isLoading = false,
                         currentStep = AuthStep.PROFILE_INFO,
-                        name = googleName,
+                        firstName = firstName,
+                        surname = surname,
                         isLoginMode = false
                     )
                 }

@@ -1,14 +1,18 @@
 package tj.msu.presentation.components
 
+import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -25,23 +29,33 @@ import tj.msu.presentation.theme.*
 @Composable
 fun LessonItem(
     lesson: Lesson,
+    isExpandable: Boolean = false,
     onClick: () -> Unit
 ) {
     if (lesson.type == LessonType.WINDOW) {
-        WindowItem(lesson)
+        WindowItem(lesson, isExpandable)
     } else {
         StandardLessonItem(lesson, onClick)
     }
 }
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
-fun WindowItem(lesson: Lesson) {
+fun WindowItem(lesson: Lesson, isExpandable: Boolean) {
+    val hasFreeRooms = !lesson.freeRooms.isNullOrEmpty()
+    var isExpanded by remember(lesson.id) { mutableStateOf(false) }
+    
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 8.dp),
-        colors = CardDefaults.cardColors(containerColor = Color(0xFFF5F5F5)),
-        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+            .padding(horizontal = 16.dp, vertical = 6.dp)
+            .let { if (isExpandable && hasFreeRooms) it.animateContentSize().clickable { isExpanded = !isExpanded } else it },
+        colors = CardDefaults.cardColors(
+            containerColor = if (hasFreeRooms) CardBackground else Color(0xFFF5F5F5)
+        ),
+        elevation = CardDefaults.cardElevation(
+            defaultElevation = if (hasFreeRooms) 2.dp else 0.dp
+        ),
         shape = RoundedCornerShape(12.dp)
     ) {
         Row(
@@ -53,7 +67,7 @@ fun WindowItem(lesson: Lesson) {
                 modifier = Modifier
                     .fillMaxHeight()
                     .width(6.dp)
-                    .background(Color.LightGray)
+                    .background(if (hasFreeRooms) MsuBlue else Color.LightGray)
             )
 
             Column(
@@ -85,14 +99,84 @@ fun WindowItem(lesson: Lesson) {
                     .weight(1f),
                 verticalArrangement = Arrangement.Center
             ) {
-                Text(
-                    text = "Свободно",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = Color.Gray
-                )
+                if (hasFreeRooms) {
+                    Text(
+                        text = "Свободные аудитории:",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = Color.Gray,
+                        modifier = Modifier.padding(bottom = 8.dp)
+                    )
+
+                    FlowRow(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp),
+                        maxLines = if (!isExpandable || isExpanded) Int.MAX_VALUE else 1,
+                        overflow = FlowRowOverflow.expandIndicator {
+                             if (isExpandable) {
+                                 Box(
+                                     modifier = Modifier
+                                         .height(32.dp)
+                                         .wrapContentWidth(),
+                                     contentAlignment = Alignment.Center
+                                 ) {
+                                     Icon(
+                                         imageVector = Icons.Default.KeyboardArrowDown,
+                                         contentDescription = "Expand",
+                                         tint = Color.Gray
+                                     )
+                                 }
+                             }
+                        }
+                    ) {
+                        lesson.freeRooms?.forEach { room ->
+                            RoomChip(room, isLarge = isExpandable)
+                        }
+                        
+                        if (isExpandable && isExpanded) {
+                            Box(
+                                modifier = Modifier
+                                    .height(32.dp)
+                                    .wrapContentWidth(),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.KeyboardArrowUp,
+                                    contentDescription = "Collapse",
+                                    tint = Color.Gray
+                                )
+                            }
+                        }
+                    }
+                } else {
+                    Text(
+                        text = "Свободно",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.Gray
+                    )
+                }
             }
         }
+    }
+}
+
+@Composable
+private fun RoomChip(room: String, isLarge: Boolean) {
+    Box(
+        modifier = Modifier
+            .border(1.dp, Color(0xFFC8E6C9), RoundedCornerShape(8.dp))
+            .background(Color(0xFFF1F8E9), RoundedCornerShape(8.dp))
+            .padding(
+                horizontal = if (isLarge) 12.dp else 8.dp,
+                vertical = if (isLarge) 6.dp else 4.dp
+            )
+    ) {
+        Text(
+            text = room,
+            style = if (isLarge) MaterialTheme.typography.labelLarge else MaterialTheme.typography.labelSmall,
+            fontWeight = FontWeight.Bold,
+            color = Color(0xFF2E7D32)
+        )
     }
 }
 
@@ -189,6 +273,7 @@ fun LessonTypeBadge(type: LessonType) {
         LessonType.EXAM -> BadgeExam to TextExam
         LessonType.CREDIT -> BadgeCredit to TextCredit
         LessonType.CONSULTATION -> BadgeConsultation to TextConsultation
+        LessonType.STREAM -> BadgeStream to TextStream
         else -> Color(0xFFEEEEEE) to Color.Gray
     }
 

@@ -7,6 +7,7 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.*
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -14,6 +15,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -56,9 +58,12 @@ fun AuthScreen(
                 account?.idToken?.let { token ->
                     viewModel.setEvent(AuthEvent.OnGoogleSignIn(token))
                 }
-            } catch (_: ApiException) {
-                Toast.makeText(context, "Google Sign In Failed", Toast.LENGTH_SHORT).show()
+            } catch (e: ApiException) {
+                Toast.makeText(context, "Ошибка входа Google: ${e.statusCode}", Toast.LENGTH_LONG).show()
+                e.printStackTrace()
             }
+        } else {
+             Toast.makeText(context, "Вход отменен (Code: ${result.resultCode})", Toast.LENGTH_SHORT).show()
         }
     }
 
@@ -212,72 +217,133 @@ fun AuthScreen(
                     }
 
                 } else {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(bottom = 16.dp),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        FilterChip(
+                            selected = state.selectedRole == "student",
+                            onClick = { viewModel.setEvent(AuthEvent.OnRoleChange("student")) },
+                            label = { Text("Студент") },
+                            modifier = Modifier.weight(1f),
+                             leadingIcon = { if (state.selectedRole == "student") Icon(Icons.Default.Check, contentDescription = null) }
+                        )
+                        FilterChip(
+                            selected = state.selectedRole == "teacher",
+                            onClick = { viewModel.setEvent(AuthEvent.OnRoleChange("teacher")) },
+                            label = { Text("Преподаватель") },
+                            modifier = Modifier.weight(1f),
+                            leadingIcon = { if (state.selectedRole == "teacher") Icon(Icons.Default.Check, contentDescription = null) }
+                        )
+                    }
+
                     OutlinedTextField(
-                        value = state.name,
-                        onValueChange = { viewModel.setEvent(AuthEvent.OnNameChange(it)) },
-                        label = { Text("Имя и Фамилия") },
+                        value = state.surname,
+                        onValueChange = { viewModel.setEvent(AuthEvent.OnSurnameChange(it)) },
+                        label = { Text("Фамилия") },
                         modifier = Modifier.fillMaxWidth(),
                         singleLine = true
                     )
-                    Spacer(modifier = Modifier.height(16.dp))
+                    Spacer(modifier = Modifier.height(8.dp))
+                    
+                    OutlinedTextField(
+                        value = state.firstName,
+                        onValueChange = { viewModel.setEvent(AuthEvent.OnFirstNameChange(it)) },
+                        label = { Text("Имя") },
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
 
-                    var facultyExpanded by remember { mutableStateOf(false) }
-                    ExposedDropdownMenuBox(
-                        expanded = facultyExpanded,
-                        onExpandedChange = { facultyExpanded = it },
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        OutlinedTextField(
-                            value = state.faculties[state.selectedFacultyCode] ?: "",
-                            onValueChange = {},
-                            readOnly = true,
-                            label = { Text("Направление") },
-                            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = facultyExpanded) },
-                            modifier = Modifier.fillMaxWidth().menuAnchor()
-                        )
-                        ExposedDropdownMenu(
-                            expanded = facultyExpanded,
-                            onDismissRequest = { facultyExpanded = false }
-                        ) {
-                            state.faculties.forEach { (code, title) ->
-                                DropdownMenuItem(
-                                    text = { Text(title) },
-                                    onClick = {
-                                        viewModel.setEvent(AuthEvent.OnFacultyChange(code))
-                                        facultyExpanded = false
-                                    }
-                                )
+                    if (state.selectedRole == "teacher") {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.fillMaxWidth().clickable {
+                                viewModel.setEvent(AuthEvent.OnTogglePatronymicVisibility(!state.hasNoPatronymic))
                             }
+                        ) {
+                            Checkbox(
+                                checked = state.hasNoPatronymic,
+                                onCheckedChange = { viewModel.setEvent(AuthEvent.OnTogglePatronymicVisibility(it)) }
+                            )
+                            Text(text = "Нет отчества")
                         }
+                    }
+
+                    if (!state.hasNoPatronymic) {
+                        OutlinedTextField(
+                            value = state.patronymic,
+                            onValueChange = { viewModel.setEvent(AuthEvent.OnPatronymicChange(it)) },
+                            label = { 
+                                Text(if (state.selectedRole == "teacher") "Отчество" else "Отчество (необязательно)") 
+                            },
+                            modifier = Modifier.fillMaxWidth(),
+                            singleLine = true
+                        )
                     }
                     Spacer(modifier = Modifier.height(16.dp))
 
-                    var courseExpanded by remember { mutableStateOf(false) }
-                    ExposedDropdownMenuBox(
-                        expanded = courseExpanded,
-                        onExpandedChange = { courseExpanded = it },
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        OutlinedTextField(
-                            value = "${state.selectedCourse} курс",
-                            onValueChange = {},
-                            readOnly = true,
-                            label = { Text("Курс") },
-                            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = courseExpanded) },
-                            modifier = Modifier.fillMaxWidth().menuAnchor()
-                        )
-                        ExposedDropdownMenu(
-                            expanded = courseExpanded,
-                            onDismissRequest = { courseExpanded = false }
+                    if (state.selectedRole == "student") {
+                        var facultyExpanded by remember { mutableStateOf(false) }
+                        ExposedDropdownMenuBox(
+                            expanded = facultyExpanded,
+                            onExpandedChange = { facultyExpanded = it },
+                            modifier = Modifier.fillMaxWidth()
                         ) {
-                            state.courses.forEach { course ->
-                                DropdownMenuItem(
-                                    text = { Text("$course курс") },
-                                    onClick = {
-                                        viewModel.setEvent(AuthEvent.OnCourseChange(course))
-                                        courseExpanded = false
-                                    }
-                                )
+                            OutlinedTextField(
+                                value = state.faculties[state.selectedFacultyCode] ?: "",
+                                onValueChange = {},
+                                readOnly = true,
+                                label = { Text("Направление") },
+                                trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = facultyExpanded) },
+                                modifier = Modifier.fillMaxWidth().menuAnchor()
+                            )
+                            ExposedDropdownMenu(
+                                expanded = facultyExpanded,
+                                onDismissRequest = { facultyExpanded = false }
+                            ) {
+                                state.faculties.forEach { (code, title) ->
+                                    DropdownMenuItem(
+                                        text = { Text(title) },
+                                        onClick = {
+                                            viewModel.setEvent(AuthEvent.OnFacultyChange(code))
+                                            facultyExpanded = false
+                                        }
+                                    )
+                                }
+                            }
+                        }
+                        Spacer(modifier = Modifier.height(16.dp))
+
+                        var courseExpanded by remember { mutableStateOf(false) }
+                        ExposedDropdownMenuBox(
+                            expanded = courseExpanded,
+                            onExpandedChange = { courseExpanded = it },
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            OutlinedTextField(
+                                value = "${state.selectedCourse} курс",
+                                onValueChange = {},
+                                readOnly = true,
+                                label = { Text("Курс") },
+                                trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = courseExpanded) },
+                                modifier = Modifier.fillMaxWidth().menuAnchor()
+                            )
+                            ExposedDropdownMenu(
+                                expanded = courseExpanded,
+                                onDismissRequest = { courseExpanded = false }
+                            ) {
+                                state.courses.forEach { course ->
+                                    DropdownMenuItem(
+                                        text = { Text("$course курс") },
+                                        onClick = {
+                                            viewModel.setEvent(AuthEvent.OnCourseChange(course))
+                                            courseExpanded = false
+                                        }
+                                    )
+                                }
                             }
                         }
                     }

@@ -29,7 +29,7 @@ sealed class Screen(val route: String, val title: String, val icon: IconSource) 
 
     data object Teachers : Screen(
         "teachers",
-        "Препод.",
+        "Преподаватель",
         IconSource.Resource(R.drawable.ic_teacher)
     )
 
@@ -44,4 +44,8 @@ sealed class Screen(val route: String, val title: String, val icon: IconSource) 
         "Уведомления",
         IconSource.Vector(Icons.Default.Notifications)
     )
+
+    data object Splash : Screen("splash", "Splash", IconSource.Resource(0))
+    data object Auth : Screen("auth", "Auth", IconSource.Resource(0))
+    data object Main : Screen("main", "Main", IconSource.Resource(0))
 }

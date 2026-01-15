@@ -18,8 +18,9 @@ class TeacherRepositoryImpl(
     private val db: FirebaseDatabase
 ) : TeacherRepository {
 
-    override fun getTeachers(): Flow<List<TeacherModel>> = callbackFlow {
-        val ref = db.getReference("teachers")
+    override fun getTeachers(isNextWeek: Boolean): Flow<List<TeacherModel>> = callbackFlow {
+        val path = if (isNextWeek) "teachers_next" else "teachers"
+        val ref = db.getReference(path)
 
         val listener = object : ValueEventListener {
             override fun onDataChange(snapshot: DataSnapshot) {
@@ -33,6 +34,23 @@ class TeacherRepositoryImpl(
                 }.sortedBy { it.name }
 
                 trySend(teachers)
+            }
+
+            override fun onCancelled(error: DatabaseError) {
+                close(error.toException())
+            }
+        }
+
+        ref.addValueEventListener(listener)
+        awaitClose { ref.removeEventListener(listener) }
+    }
+
+    override fun checkNextWeekTeachersAvailability(): Flow<Boolean> = callbackFlow {
+        val ref = db.getReference("teachers_next")
+
+        val listener = object : ValueEventListener {
+            override fun onDataChange(snapshot: DataSnapshot) {
+                trySend(snapshot.exists())
             }
 
             override fun onCancelled(error: DatabaseError) {

@@ -15,7 +15,12 @@ data class AuthState(
 
     val email: String = "",
     val pass: String = "",
-    val name: String = "",
+    
+    val surname: String = "",
+    val firstName: String = "",
+    val patronymic: String = "",
+    val hasNoPatronymic: Boolean = false,
+    val selectedRole: String = "student",
 
     val selectedFacultyCode: String = "pmi",
     val selectedCourse: Int = 1,
@@ -37,7 +42,12 @@ data class AuthState(
 sealed interface AuthEvent : UiEvent {
     data class OnEmailChange(val email: String) : AuthEvent
     data class OnPassChange(val pass: String) : AuthEvent
-    data class OnNameChange(val name: String) : AuthEvent
+    
+    data class OnSurnameChange(val value: String) : AuthEvent
+    data class OnFirstNameChange(val value: String) : AuthEvent
+    data class OnPatronymicChange(val value: String) : AuthEvent
+    data class OnTogglePatronymicVisibility(val isHidden: Boolean) : AuthEvent
+    data class OnRoleChange(val role: String) : AuthEvent
     data class OnFacultyChange(val code: String) : AuthEvent
     data class OnCourseChange(val course: Int) : AuthEvent
 

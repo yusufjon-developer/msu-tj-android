@@ -5,6 +5,7 @@ import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.auth.GoogleAuthProvider
 import com.google.firebase.database.FirebaseDatabase
+import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.SetOptions
 import com.google.firebase.messaging.FirebaseMessaging
@@ -49,7 +50,10 @@ class AuthRepositoryImpl(
     override suspend fun signUpWithEmail(
         email: String,
         pass: String,
-        name: String,
+        surname: String,
+        firstName: String,
+        patronymic: String,
+        role: String,
         faculty: String,
         course: Int
     ): Result<Unit> {
@@ -57,7 +61,7 @@ class AuthRepositoryImpl(
             val authResult = firebaseAuth.createUserWithEmailAndPassword(email, pass).await()
             val uid = authResult.user?.uid ?: throw Exception("User ID not found")
 
-            saveUserProfile(uid, name, faculty, course).getOrThrow()
+            saveUserProfile(uid, surname, firstName, patronymic, role, faculty, course).getOrThrow()
 
             Result.success(Unit)
         } catch (e: Exception) {
@@ -65,14 +69,44 @@ class AuthRepositoryImpl(
         }
     }
 
-    override suspend fun saveUserProfile(uid: String, name: String, faculty: String, course: Int): Result<Unit> {
+    override suspend fun saveUserProfile(
+        uid: String, 
+        surname: String, 
+        firstName: String, 
+        patronymic: String, 
+        role: String, 
+        faculty: String, 
+        course: Int
+    ): Result<Unit> {
         return try {
-            val userProfile = UserProfileDto(id = uid, name = name, email = firebaseAuth.currentUser?.email ?: "", facultyCode = faculty, course = course)
-            db.getReference("users").child(uid).setValue(userProfile).await()
+            val fullName = "$surname $firstName $patronymic".trim()
+            val userProfile = UserProfileDto(
+                id = uid, 
+                name = fullName, 
+                surname = surname,
+                firstName = firstName,
+                patronymic = patronymic,
+                role = role,
+                email = firebaseAuth.currentUser?.email ?: "", 
+                facultyCode = faculty, 
+                course = course
+            )
+            
+            firebaseFirestore.collection("users").document(uid).set(userProfile).await()
 
-            userPrefs.saveUserSelection(name, faculty, course)
+            userPrefs.saveUserSelection(fullName, surname, firstName, patronymic, role, faculty, course)
 
-            subscribeToGroupNotifications(faculty, course)
+            if (role == "student") {
+                subscribeToGroupNotifications(faculty, course)
+            } else if (role == "teacher") {
+                firebaseMessaging.subscribeToTopic("teachers")
+                
+                val user = firebaseAuth.currentUser
+                if (user != null) {
+                   firebaseFirestore.collection("users").document(user.uid)
+                       .update("subscribedTopics", FieldValue.arrayUnion("teachers"))
+                }
+            }
 
             Result.success(Unit)
         } catch (e: Exception) {
@@ -81,23 +115,50 @@ class AuthRepositoryImpl(
     }
 
     override fun subscribeToGroupNotifications(faculty: String, course: Int) {
-        firebaseMessaging.subscribeToTopic("global")
-        val topic = "${faculty}_${course}"
-        firebaseMessaging.subscribeToTopic(topic)
+        val groupTopic = "${faculty}_${course}"
+        val globalTopic = "global"
+
+        firebaseMessaging.subscribeToTopic(globalTopic)
+        firebaseMessaging.subscribeToTopic(groupTopic)
+
+        val user = firebaseAuth.currentUser ?: return
+
+        val userRef = firebaseFirestore.collection("users").document(user.uid)
+
+        userRef.update("subscribedTopics", FieldValue.arrayUnion(globalTopic, groupTopic))
+            .addOnSuccessListener {
+                android.util.Log.d("FCM", "Топики сохранены в профиль: $globalTopic, $groupTopic")
+            }
+            .addOnFailureListener { e ->
+                android.util.Log.e("FCM", "Ошибка сохранения топиков", e)
+            }
     }
 
     override fun unsubscribeFromGroupNotifications(faculty: String, course: Int) {
-        val topic = "${faculty}_${course}"
-        firebaseMessaging.unsubscribeFromTopic(topic)
+        val groupTopic = "${faculty}_${course}"
+        firebaseMessaging.unsubscribeFromTopic(groupTopic)
+
+        val user = firebaseAuth.currentUser ?: return
+
+        firebaseFirestore.collection("users").document(user.uid)
+            .update("subscribedTopics", FieldValue.arrayRemove(groupTopic))
     }
 
     override suspend fun getUserProfile(uid: String): Result<UserProfileDto?> {
         return try {
-            val snapshot = db.getReference("users").child(uid).get().await()
-            val profile = snapshot.getValue(UserProfileDto::class.java)
+            val snapshot = firebaseFirestore.collection("users").document(uid).get().await()
+            val profile = snapshot.toObject(UserProfileDto::class.java)
 
             if (profile != null) {
-                userPrefs.saveUserSelection(profile.name, profile.facultyCode, profile.course)
+                userPrefs.saveUserSelection(
+                    profile.name, 
+                    profile.surname, 
+                    profile.firstName, 
+                    profile.patronymic, 
+                    profile.role, 
+                    profile.facultyCode, 
+                    profile.course
+                )
             }
 
             Result.success(profile)
@@ -144,5 +205,21 @@ class AuthRepositoryImpl(
     override fun signOut() {
         firebaseAuth.signOut()
         try { googleSignInClient.signOut() } catch (_: Exception) {}
+    }
+
+    override suspend fun getAppInfo(): Result<tj.msu.domain.model.AppInfo> {
+        return try {
+            val snapshot = db.getReference("app_info").get().await()
+            
+            val info = tj.msu.domain.model.AppInfo(
+                latestVersion = snapshot.child("latest_version").getValue(String::class.java) ?: "",
+                forceUpdate = snapshot.child("force_update").getValue(Boolean::class.java) ?: false,
+                url = snapshot.child("url").getValue(String::class.java) ?: "",
+                changelog = snapshot.child("changelog").getValue(String::class.java) ?: ""
+            )
+            Result.success(info)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
     }
 }

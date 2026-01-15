@@ -2,6 +2,7 @@ package tj.msu.presentation.screen.freerooms
 
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.launch
@@ -10,6 +11,7 @@ import org.koin.android.annotation.KoinViewModel
 import tj.msu.data.repository.UserPreferencesRepository
 import tj.msu.domain.repository.ScheduleRepository
 import tj.msu.presentation.core.base.MVIViewModel
+import tj.msu.presentation.util.DateUtils
 import java.time.LocalDate
 
 @KoinViewModel
@@ -27,13 +29,34 @@ class FreeRoomsViewModel(
     init {
         setEvent(FreeRoomsEvent.LoadData)
         observeSettings()
+        
+        viewModelScope.launch {
+            repository.checkNextWeekFreeRoomsAvailability().collect { available ->
+                setState { copy(isNextWeekAvailable = available) }
+            }
+        }
     }
 
     private fun observeSettings() {
         viewModelScope.launch {
             userPrefs.userProfile.collect { profile ->
                 if (profile != null) {
-                    setState { copy(isExpandableLayout = profile.isExpandableFreeRooms) }
+                    val needReload = profile.isSmartFreeRooms != currentState.isSmartFreeRooms ||
+                            profile.facultyCode != currentState.selectedFaculty ||
+                            profile.course != currentState.selectedCourse
+
+                    setState {
+                        copy(
+                            isExpandableLayout = profile.isExpandableFreeRooms,
+                            isSmartFreeRooms = profile.isSmartFreeRooms,
+                            selectedFaculty = profile.facultyCode,
+                            selectedCourse = profile.course
+                        )
+                    }
+
+                    if (needReload) {
+                        loadData()
+                    }
                 }
             }
         }
@@ -45,22 +68,31 @@ class FreeRoomsViewModel(
             is FreeRoomsEvent.SelectDay -> {
                 setState { copy(currentDayIndex = event.dayIndex) }
             }
+            is FreeRoomsEvent.OnToggleNextWeek -> {
+                val nextWeek = !currentState.isNextWeek
+                setState { copy(isNextWeek = nextWeek) }
+                loadData()
+            }
         }
     }
 
+    private var dataJob: Job? = null
     private fun loadData() {
-        viewModelScope.launch {
-            repository.getFreeRooms()
+        dataJob?.cancel()
+        dataJob = viewModelScope.launch {
+            repository.getFreeRooms(currentState.isNextWeek)
                 .onStart { setState { copy(isLoading = true) } }
                 .catch { e -> setState { copy(isLoading = false, error = e.message) } }
                 .collect { freeRooms ->
                     withContext(Dispatchers.Default) {
                         val processedMap = processAllDays(freeRooms.schedule)
+                        val dates = DateUtils.getWeekDates(currentState.isNextWeek)
 
                         setState {
                             copy(
                                 isLoading = false,
-                                freeRoomsByDay = processedMap
+                                freeRoomsByDay = processedMap,
+                                weekDates = dates
                             )
                         }
                     }

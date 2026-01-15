@@ -4,8 +4,10 @@ import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ExitToApp
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
@@ -21,6 +23,7 @@ import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import org.koin.androidx.compose.koinViewModel
 import tj.msu.R
@@ -39,9 +42,11 @@ fun ProfileScreen(
    
     val uriHandler = LocalUriHandler.current
    
-    val githubReleasesUrl = "https://github.com/yusufjon-developer/msu-tj-android/releases"
+    val githubReleasesUrl = "https://github.com/yusufjon-developer/msu-tj-android"
 
     var showEditSheet by remember { mutableStateOf(false) }
+    var showProfileEditSheet by remember { mutableStateOf(false) }
+    val scrollState = rememberScrollState()
 
     LaunchedEffect(Unit) {
         viewModel.effect.collect { effect ->
@@ -68,8 +73,10 @@ fun ProfileScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
+            .verticalScroll(scrollState)
             .background(MsuBackground)
-            .padding(16.dp),
+            .padding(16.dp)
+            .clickable { showProfileEditSheet = true},
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
 
@@ -202,6 +209,41 @@ fun ProfileScreen(
                         )
                     )
                 }
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = "Умный фильтр аудиторий",
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = Color.Black
+                        )
+                        Text(
+                            text = "Показывать только в окнах и по краям занятий (+/- 1 пара)",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = Color.Gray,
+                            lineHeight = 14.sp
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.width(8.dp))
+
+                    Switch(
+                        checked = state.isSmartFreeRooms,
+                        onCheckedChange = { viewModel.setEvent(ProfileEvent.OnToggleSmartFreeRooms(it)) },
+                        colors = SwitchDefaults.colors(
+                            checkedThumbColor = Color.White,
+                            checkedTrackColor = MsuBlue,
+                            uncheckedThumbColor = Color.White,
+                            uncheckedTrackColor = Color.LightGray
+                        )
+                    )
+                }
             }
         }
 
@@ -218,7 +260,6 @@ fun ProfileScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .clickable {
-                       
                         uriHandler.openUri(githubReleasesUrl)
                     }
                     .padding(16.dp),
@@ -237,13 +278,13 @@ fun ProfileScreen(
                
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        text = "История обновлений",
+                        text = "О программе",
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
                         color = Color.Black
                     )
                     Text(
-                        text = "GitHub Releases",
+                        text = "GitHub",
                         style = MaterialTheme.typography.bodySmall,
                         color = Color.Gray
                     )
@@ -260,6 +301,7 @@ fun ProfileScreen(
 
         Spacer(modifier = Modifier.weight(1f))
 
+        Spacer(Modifier.height(16.dp))
        
         Button(
             onClick = { viewModel.setEvent(ProfileEvent.OnLogout) },
@@ -281,5 +323,82 @@ fun ProfileScreen(
         }
 
         Spacer(modifier = Modifier.height(16.dp))
+    }
+
+    if (showProfileEditSheet) {
+        EditProfileBottomSheet(
+            initialSurname = state.surname,
+            initialFirstName = state.firstName,
+            initialPatronymic = state.patronymic,
+            onApply = { s, f, p ->
+                viewModel.setEvent(ProfileEvent.OnUpdateProfile(s, f, p))
+                showProfileEditSheet = false
+            },
+            onDismiss = { showProfileEditSheet = false }
+        )
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun EditProfileBottomSheet(
+    initialSurname: String,
+    initialFirstName: String,
+    initialPatronymic: String,
+    onApply: (String, String, String) -> Unit,
+    onDismiss: () -> Unit
+) {
+    var surname by remember { mutableStateOf(initialSurname) }
+    var firstName by remember { mutableStateOf(initialFirstName) }
+    var patronymic by remember { mutableStateOf(initialPatronymic) }
+
+    ModalBottomSheet(onDismissRequest = onDismiss) {
+        Column(
+            modifier = Modifier
+                .padding(16.dp)
+                .padding(bottom = 32.dp)
+        ) {
+            Text(
+                text = "Редактирование профиля",
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Bold
+            )
+            Spacer(modifier = Modifier.height(16.dp))
+
+            OutlinedTextField(
+                value = surname,
+                onValueChange = { surname = it },
+                label = { Text("Фамилия") },
+                modifier = Modifier.fillMaxWidth(),
+                singleLine = true
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+
+            OutlinedTextField(
+                value = firstName,
+                onValueChange = { firstName = it },
+                label = { Text("Имя") },
+                modifier = Modifier.fillMaxWidth(),
+                singleLine = true
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+
+            OutlinedTextField(
+                value = patronymic,
+                onValueChange = { patronymic = it },
+                label = { Text("Отчество") },
+                modifier = Modifier.fillMaxWidth(),
+                singleLine = true
+            )
+            Spacer(modifier = Modifier.height(24.dp))
+
+            Button(
+                onClick = { onApply(surname, firstName, patronymic) },
+                modifier = Modifier.fillMaxWidth(),
+                colors = ButtonDefaults.buttonColors(containerColor = MsuBlue)
+            ) {
+                Text("Сохранить")
+            }
+        }
     }
 }

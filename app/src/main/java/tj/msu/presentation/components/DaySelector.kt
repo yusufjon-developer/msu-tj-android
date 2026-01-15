@@ -16,10 +16,13 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import tj.msu.presentation.theme.MsuBlue
+import tj.msu.presentation.theme.TextPractice
 
 @Composable
 fun DaySelector(
     selectedDayIndex: Int,
+    displayedDates: List<String> = emptyList(),
+    hasLessons: List<Boolean> = List(7) { true },
     onDaySelected: (Int) -> Unit
 ) {
     val days = listOf("ПН", "ВТ", "СР", "ЧТ", "ПТ", "СБ", "ВС")
@@ -32,10 +35,35 @@ fun DaySelector(
         horizontalArrangement = Arrangement.spacedBy(4.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        days.forEachIndexed { index, day ->
+        days.forEachIndexed { index, dayName ->
             val isSelected = index == selectedDayIndex
+            val dayHasLessons = hasLessons.getOrElse(index) { true }
+            
             val backgroundColor = if (isSelected) MsuBlue else Color.Transparent
-            val contentColor = if (isSelected) Color.White else Color.Gray
+            
+            val contentColor = when {
+                isSelected -> Color.White
+                !dayHasLessons -> Color.Gray
+                else -> TextPractice.copy(alpha = 0.6f)
+            }
+
+            val textToShow = if (isSelected) {
+                if (index < displayedDates.size) {
+
+                    try {
+                        val dateStr = displayedDates[index]
+
+                        val parsed = dateStr.substringAfterLast("-", dateStr)
+                         if (parsed.isBlank()) dayName else parsed
+                    } catch (e: Exception) {
+                        dayName
+                    }
+                } else {
+                    dayName
+                }
+            } else {
+                dayName
+            }
 
             Box(
                 modifier = Modifier
@@ -47,7 +75,7 @@ fun DaySelector(
                 contentAlignment = Alignment.Center
             ) {
                 Text(
-                    text = day,
+                    text = textToShow,
                     style = MaterialTheme.typography.labelMedium,
                     fontWeight = FontWeight.Bold,
                     color = contentColor,

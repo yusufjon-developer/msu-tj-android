@@ -27,8 +27,8 @@ import org.koin.androidx.compose.koinViewModel
 import tj.msu.domain.model.TeacherModel
 import tj.msu.presentation.components.DaySelector
 import tj.msu.presentation.components.LessonItem
+import tj.msu.presentation.components.NextWeekButton
 import java.time.LocalDate
-import java.util.*
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
@@ -37,119 +37,135 @@ fun TeachersScreen(
 ) {
     val state by viewModel.uiState.collectAsState()
 
-   
+
     val scope = rememberCoroutineScope()
 
-   
+
     val currentDayOfWeek = remember {
-       
-       
+
+
         val day = LocalDate.now().dayOfWeek.value - 1
         if (day in 0..6) day else 0
     }
 
-   
+
     val pagerState = rememberPagerState(
         initialPage = currentDayOfWeek,
         pageCount = { 7 }
     )
 
-   
+
     var showBottomSheet by remember { mutableStateOf(false) }
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
-    Scaffold(
-        containerColor = Color(0xFFF5F5F5)
-    ) { paddingValues ->
-        Column(
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+    ) {
+
+        TeacherSelectorCard(
+            teacherName = state.selectedTeacher?.name ?: "Выберите преподавателя",
+            onClick = {
+                viewModel.setEvent(TeachersEvent.OnResetSearch)
+                showBottomSheet = true
+            }
+        )
+
+        Box(
             modifier = Modifier
-                .padding(paddingValues)
-                .fillMaxSize()
+                .fillMaxWidth(),
+            contentAlignment = Alignment.CenterEnd
         ) {
-            Spacer(modifier = Modifier.height(16.dp))
-
-           
-            TeacherSelectorCard(
-                teacherName = state.selectedTeacher?.name ?: "Выберите преподавателя",
-                onClick = {
-                    viewModel.setEvent(TeachersEvent.OnResetSearch)
-                    showBottomSheet = true
-                }
+            NextWeekButton(
+                isVisible = state.isNextWeekAvailable,
+                isNextWeek = state.isNextWeek,
+                onClick = { viewModel.setEvent(TeachersEvent.OnToggleNextWeek) }
             )
+        }
 
-            if (state.isLoading) {
-                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    CircularProgressIndicator()
+        if (state.isLoading) {
+            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                CircularProgressIndicator()
+            }
+        } else {
+            val teacher = state.selectedTeacher
+            if (teacher != null) {
+
+
+                val teacherDates = teacher.days.mapNotNull { it.date }.filter { it.isNotBlank() }
+                val dates = if (teacherDates.size >= 7) teacherDates else state.weekDates
+                
+                val hasLessonsList = remember(teacher.days) {
+                    (0..6).map { dayIndex ->
+                        val daySchedule = teacher.days.find { it.dayIndex == dayIndex }
+                        val lessons = daySchedule?.lessons ?: emptyList()
+                        lessons.isNotEmpty() && lessons.any { it.type != tj.msu.domain.model.LessonType.WINDOW }
+                    }
                 }
-            } else {
-                val teacher = state.selectedTeacher
-                if (teacher != null) {
-                   
-                    DaySelector(
-                        selectedDayIndex = pagerState.currentPage,
-                        onDaySelected = { index ->
-                           
-                            scope.launch {
-                                pagerState.animateScrollToPage(index)
-                            }
-                        }
-                    )
 
-                   
-                    HorizontalPager(
-                        state = pagerState,
-                        modifier = Modifier.fillMaxSize(),
-                       
+                DaySelector(
+                    selectedDayIndex = pagerState.currentPage,
+                    displayedDates = dates,
+                    hasLessons = hasLessonsList,
+                    onDaySelected = { index ->
+
+                        scope.launch {
+                            pagerState.animateScrollToPage(index)
+                        }
+                    }
+                )
+
+
+                HorizontalPager(
+                    state = pagerState,
+                    modifier = Modifier.fillMaxSize(),
+
                     ) { pageIndex ->
 
-                       
-                        val daySchedule = teacher.days.find { it.dayIndex == pageIndex }
-                        val lessons = daySchedule?.lessons ?: emptyList()
 
-                        if (lessons.isNotEmpty()) {
-                            LazyColumn(
-                                modifier = Modifier.fillMaxSize(),
-                                contentPadding = PaddingValues(bottom = 16.dp)
-                            ) {
-                                items(lessons) { lesson ->
-                                    LessonItem(
-                                        lesson = lesson,
-                                        onClick = {  }
-                                    )
-                                }
+                    val daySchedule = teacher.days.find { it.dayIndex == pageIndex }
+                    val lessons = daySchedule?.lessons ?: emptyList()
+
+                    val isTrulyEmpty = lessons.isEmpty() || lessons.all { it.type == tj.msu.domain.model.LessonType.WINDOW }
+
+                    if (!isTrulyEmpty) {
+                        LazyColumn(
+                            modifier = Modifier.fillMaxSize(),
+                            contentPadding = PaddingValues(bottom = 16.dp)
+                        ) {
+                            items(lessons) { lesson ->
+                                LessonItem(
+                                    lesson = lesson,
+                                    isExpandable = state.isExpandableFreeRooms,
+                                    onClick = { }
+                                )
                             }
-                        } else {
-                           
-                            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                                Text("В этот день занятий нет", color = Color.Gray)
-                            }
+                        }
+                    } else {
+
+                        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                            Text("В этот день занятий нет", color = Color.Gray)
                         }
                     }
                 }
             }
         }
-
-       
-        if (showBottomSheet) {
-            TeacherSearchBottomSheet(
-                sheetState = sheetState,
-                searchQuery = state.searchQuery,
-                teachers = state.filteredTeachers,
-                onSearch = { viewModel.setEvent(TeachersEvent.OnSearch(it)) },
-                onSelect = { teacher ->
-                    viewModel.setEvent(TeachersEvent.OnSelectTeacher(teacher))
-                    showBottomSheet = false
-                },
-                onDismiss = { showBottomSheet = false }
-            )
-        }
     }
-}
 
-fun getCurrentDayIndex(): Int {
-    val calendar = Calendar.getInstance()
-    val day = calendar.get(Calendar.DAY_OF_WEEK)
-    return if (day == Calendar.SUNDAY) 6 else day - 2
+
+    if (showBottomSheet) {
+        TeacherSearchBottomSheet(
+            sheetState = sheetState,
+            searchQuery = state.searchQuery,
+            teachers = state.filteredTeachers,
+            onSearch = { viewModel.setEvent(TeachersEvent.OnSearch(it)) },
+            onSelect = { teacher ->
+                viewModel.setEvent(TeachersEvent.OnSelectTeacher(teacher))
+                showBottomSheet = false
+            },
+            onDismiss = { showBottomSheet = false }
+        )
+    }
 }
 
 @Composable
@@ -160,7 +176,7 @@ fun TeacherSelectorCard(
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp)
+            .padding(16.dp)
             .clickable(onClick = onClick),
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White),
@@ -297,7 +313,7 @@ fun TeacherSearchBottomSheet(
                             color = Color.Black
                         )
                     }
-                    Divider(color = Color(0xFFEEEEEE), thickness = 1.dp)
+                    HorizontalDivider(Modifier, thickness = 1.dp, color = Color(0xFFEEEEEE))
                 }
             }
         }
