@@ -2,27 +2,34 @@
 
 ![Kotlin](https://img.shields.io/badge/Kotlin-2.0.21-purple.svg)
 ![Compose](https://img.shields.io/badge/Jetpack%20Compose-Material3-blue.svg)
-![Go](https://img.shields.io/badge/Backend-Go_1.25-00ADD8?logo=go&logoColor=white)
+![Spring](https://img.shields.io/badge/Backend-Spring_1.25-00ADD8C?logo=spring)
 ![Firebase](https://img.shields.io/badge/Firebase-Auth%20%7C%20Realtime%20DB%20%7C%20FCM-orange.svg)
 
-**MSU TJ** is a mobile application designed for students and faculty of the Lomonosov Moscow State University (Dushanbe Branch). It helps students track their class schedules, find available classrooms, and receive real-time notifications from the university.
+**MSU TJ** is a comprehensive mobile application for the Lomonosov Moscow State University (Dushanbe Branch). It empowers both **Students** and **Teachers** with real-time schedule tracking, smart classroom finding, and instant university alerts.
 
 <p align="center">
-  <a href="https://github.com/yusufjon-developer/msu-tj-android/releases/tag/v1.1.1">
-    <img src="https://img.shields.io/badge/Download-APK%20v1.1.1-blue?style=for-the-badge&logo=android" alt="Download APK">
+  <a href="https://github.com/yusufjon-developer/msu-tj-android/releases/tag/v2.0.0">
+    <img src="https://img.shields.io/badge/Download-APK%20v2.0.0-blue?style=for-the-badge&logo=android" alt="Download APK">
   </a>
 </p>
 
-## ✨ Key Features
+## ✨ Key Features (v2.0.0)
 
-* **📅 Class Schedule:** View daily schedules filtered by faculty and course with **Swipe** support.
-* **👨‍🏫 Teacher Schedule (New!):** Search for instructors and view their weekly workload in real-time.
-* **🏫 Free Classrooms:** Smart filter to find empty auditoriums based on time and day of the week.
-* **🔔 Push Notifications:**
-    * Instant alerts for schedule changes or university news.
-    * Powered by the **Go Backend** + **Firebase Cloud Functions**.
-* **👤 Student Profile:** Manage faculty and course details with cloud synchronization.
-* **🔐 Authentication:** Secure sign-in via Email/Password and **Google Sign-In**.
+* **👥 Role-Based Experience:**
+    *   **Students:** Instant access to group schedules and faculty news.
+    *   **Teachers:** Personalized dashboard with teaching load and topic-based notifications.
+* **📅 Advanced Scheduling:**
+    *   **Next Week Preview:** Toggle to view the upcoming week's schedule in advance.
+    *   **Swipe Navigation:** Easily switch between days of the week.
+* **🏫 Smart Free Classrooms:** Find available auditoriums filtered by specific time slots and window periods.
+* **🔄 In-App Updates:**
+    *   Beautiful **Full-Screen Update Hub** prevents you from missing critical versions.
+    *   Supports forced (critical) and optional updates.
+* **👤 Enhanced Profile:**
+    *   Full 3-line name display (Surname, Name, Patronymic).
+    *   **Direct Editing:** Fix typos or update your details directly within the app.
+* **🔔 Intelligent Notifications:**
+    *    targeted alerts based on your role (Student Group or Teacher Staff).
 
 ## 📱 Screenshots
 
@@ -42,50 +49,38 @@
 
 ### Backend Service (Go)
 * **Language:** Golang
-* **Purpose:** Parsing schedule data, managing student data, and triggering system notifications.
+* **Purpose:** Parsing schedule XLS files, managing data consistency, and dispatching FCM payloads.
 * **Integration:** Firebase Admin SDK.
 
 ### Cloud Services (Firebase)
-* **Authentication:** User management and secure session handling.
-* **Realtime Database:** Stores the schedule structure (optimized for JSON trees).
-* **Cloud Firestore:** User profiles and notification history.
-* **Cloud Messaging (FCM):** Delivery of push notifications.
-* **Cloud Functions (Node.js):** Serverless triggers that listen for database updates and send FCM payloads.
+* **Authentication:** Secure Email/Password & Google Sign-In.
+* **Realtime Database:** Stores live schedule data (Current & Next Week).
+* **Cloud Firestore:** User profiles, roles, and subscriptions.
+* **Cloud Messaging (FCM):** Targeted push notifications.
 
 ## 🏗 System Architecture
 
 The project follows an **Event-Driven Architecture**:
 
-1.  The **Go Backend** parses data or an admin creates a notification -> Writes to **Database**.
-2.  The **Android App** observes these data sources via `callbackFlow` (Realtime Updates).
-3.  A **Cloud Function** detects important records and retrieves the user's token to send the payload via **FCM**.
-4.  The **Android App** receives the push via `MsuFirebaseMessagingService` and displays the notification.
+1.  The **Go Backend** parses schedule files -> Updates **Firebase Realtime DB**.
+2.  The **Android App** observes data via `Flow` and updates the UI instantly.
+3.  **Cloud Functions** monitor changes and trigger **FCM** notifications to specific topics (`faculty_course` or `teachers`).
+4.  The **Android App** receives the push and handles deep linking or data refresh.
 
 ## 🚀 Getting Started
 
 ### 1. Android Client
 1.  Clone the repository:
     ```bash
-    git clone [https://github.com/yusufjon-developer/msu-tj-android.git](https://github.com/yusufjon-developer/msu-tj-android.git)
+    git clone https://github.com/yusufjon-developer/msu-tj-android.git
     ```
-2.  **Important:** This project requires a `google-services.json` file.
-    * Create a project in the [Firebase Console](https://console.firebase.google.com/).
-    * Download the configuration file and place it in the `app/` directory.
-3.  Open the project in Android Studio and wait for Gradle synchronization.
-4.  Run on an Emulator or a Physical Device.
+2.  **Prerequisite:** Place your `google-services.json` in the `app/` directory.
+3.  Open in Android Studio and sync Gradle.
+4.  Run on device/emulator.
 
 ### 2. Go Backend
-To run the backend, you need a Firebase Service Account key.
-
-1.  Clone the repository:
-    ```bash
-    git clone [https://github.com/yusufjon-developer/msu-tj-backend.git](https://github.com/yusufjon-developer/msu-tj-backend.git)
-    ```
-2.  Place your `serviceAccountKey.json` file in the root of the project.
-3.  Run the server:
-    ```bash
-    go run cmd/app/main.go
-    ```
+*   Repository: [msu-tj-backend](https://github.com/yusufjon-developer/msu-tj-backend)
+*   Requires `serviceAccountKey.json`.
 
 ## 📄 License
 
