@@ -1,5 +1,6 @@
 package tj.msu.data.mapper
 
+import tj.msu.data.local.entity.FreeRoomsEntity
 import tj.msu.data.model.FreeRoomsResponseDto
 import tj.msu.domain.model.FreeRooms
 
@@ -59,4 +60,19 @@ private fun parseRoomsList(roomsData: Any?): List<String> {
         is List<*> -> roomsData.map { it.toString() }
         else -> emptyList()
     }
+}
+
+fun FreeRoomsEntity.toDomain(): FreeRooms {
+    return FreeRooms(
+        schedule = this.schedule,
+        lastUpdate = this.lastUpdate
+    )
+}
+
+fun FreeRooms.toEntity(isNextWeek: Boolean): FreeRoomsEntity {
+    return FreeRoomsEntity(
+        isNextWeek = isNextWeek,
+        schedule = this.schedule,
+        lastUpdate = this.lastUpdate
+    )
 }
