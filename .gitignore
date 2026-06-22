@@ -2,3 +2,10 @@
 /.gradle/
 /app/google-services.json
 /GUIDELINES.md
+local.properties
+.idea/
+/build
+**/build/
+.kotlin/
+*.iml
+.DS_Store
