@@ -33,9 +33,9 @@
 
 ## 📱 Screenshots
 
-|               Authentication               |                   Schedule                    |                   Free Rooms                   |                   Notifications                    |
-|:------------------------------------------:|:---------------------------------------------:|:----------------------------------------------:|:--------------------------------------------------:|
-| <img src="assets/login.jpg" width="250" /> | <img src="assets/schedule.jpg" width="250" /> | <img src="assets/freerooms.jpg" width="250" /> | <img src="assets/notifications.jpg" width="250" /> |
+|                   Schedule                    |                   Free Rooms                   |                   Teacher                    |                   Notifications                    |
+|:---------------------------------------------:|:----------------------------------------------:|:--------------------------------------------:|:--------------------------------------------------:|
+| <img src="assets/schedule.jpg" width="250" /> | <img src="assets/freerooms.jpg" width="250" /> | <img src="assets/teacher.jpg" width="250" /> | <img src="assets/notifications.jpg" width="250" /> |
 
 ## 🛠 Tech Stack
 
