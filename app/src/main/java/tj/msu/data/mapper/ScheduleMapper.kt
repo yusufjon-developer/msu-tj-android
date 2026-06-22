@@ -1,5 +1,6 @@
 package tj.msu.data.mapper
 
+import tj.msu.data.local.entity.LessonEntity
 import tj.msu.data.model.GroupScheduleDto
 import tj.msu.domain.model.Lesson
 import tj.msu.domain.model.LessonType
@@ -170,4 +171,32 @@ private fun calculateTime(pairNum: Int): String {
     val endM = endTotal % 60
 
     return String.format("%02d:%02d\n%02d:%02d", startH, startM, endH, endM)
+}
+
+fun LessonEntity.toDomain(): Lesson {
+    return Lesson(
+        id = this.id,
+        title = this.title,
+        time = this.time,
+        type = LessonType.valueOf(this.type),
+        teacher = this.teacher,
+        room = this.room,
+        dayIndex = this.dayIndex,
+        date = this.date
+    )
+}
+
+fun Lesson.toEntity(groupId: String, isNextWeek: Boolean): LessonEntity {
+    return LessonEntity(
+        id = "${groupId}_${isNextWeek}_${this.dayIndex}_${this.id}",
+        groupId = groupId,
+        isNextWeek = isNextWeek,
+        dayIndex = this.dayIndex,
+        title = this.title,
+        time = this.time,
+        type = this.type.name,
+        teacher = this.teacher,
+        room = this.room,
+        date = this.date
+    )
 }

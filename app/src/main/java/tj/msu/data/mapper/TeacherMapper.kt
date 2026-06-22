@@ -1,5 +1,6 @@
 package tj.msu.data.mapper
 
+import tj.msu.data.local.entity.TeacherEntity
 import tj.msu.data.model.TeacherDto
 import tj.msu.domain.model.DayScheduleModel
 import tj.msu.domain.model.Lesson
@@ -106,4 +107,22 @@ private fun parseListOrString(data: Any?): String {
         is String -> data
         else -> ""
     }
+}
+
+fun TeacherEntity.toDomain(): TeacherModel {
+    return TeacherModel(
+        id = this.teacherId,
+        name = this.name,
+        days = this.days
+    )
+}
+
+fun TeacherModel.toEntity(isNextWeek: Boolean): TeacherEntity {
+    return TeacherEntity(
+        id = "${this.id}_$isNextWeek",
+        teacherId = this.id,
+        name = this.name,
+        isNextWeek = isNextWeek,
+        days = this.days
+    )
 }

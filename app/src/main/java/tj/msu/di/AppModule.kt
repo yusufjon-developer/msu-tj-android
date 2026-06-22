@@ -41,4 +41,25 @@ class AppModule {
 
     @Single
     fun provideFirebaseFirestore(): FirebaseFirestore = FirebaseFirestore.getInstance()
+
+    @Single
+    fun provideDatabase(context: Context): tj.msu.data.local.AppDatabase {
+        return androidx.room.Room.databaseBuilder(
+            context.applicationContext,
+            tj.msu.data.local.AppDatabase::class.java,
+            "msu_tj_database"
+        ).fallbackToDestructiveMigration().build()
+    }
+
+    @Single
+    fun provideScheduleDao(db: tj.msu.data.local.AppDatabase) = db.scheduleDao()
+
+    @Single
+    fun provideFreeRoomsDao(db: tj.msu.data.local.AppDatabase) = db.freeRoomsDao()
+
+    @Single
+    fun provideTeacherDao(db: tj.msu.data.local.AppDatabase) = db.teacherDao()
+
+    @Single
+    fun provideNotificationDao(db: tj.msu.data.local.AppDatabase) = db.notificationDao()
 }
