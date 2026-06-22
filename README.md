@@ -2,34 +2,29 @@
 
 ![Kotlin](https://img.shields.io/badge/Kotlin-2.0.21-purple.svg)
 ![Compose](https://img.shields.io/badge/Jetpack%20Compose-Material3-blue.svg)
-![Spring](https://img.shields.io/badge/Backend-Spring_1.25-00ADD8C?logo=spring)
-![Firebase](https://img.shields.io/badge/Firebase-Auth%20%7C%20Realtime%20DB%20%7C%20FCM-orange.svg)
+![Room](https://img.shields.io/badge/Room-Database-green.svg)
+![Koin](https://img.shields.io/badge/DI-Koin-orange.svg)
+![Firebase](https://img.shields.io/badge/Firebase-Auth%20%7C%20Realtime%20DB-orange.svg)
+![JUnit 5](https://img.shields.io/badge/Testing-JUnit_5%20%7C%20MockK%20%7C%20Turbine-blue.svg)
 
-**MSU TJ** is a comprehensive mobile application for the Lomonosov Moscow State University (Dushanbe Branch). It empowers both **Students** and **Teachers** with real-time schedule tracking, smart classroom finding, and instant university alerts.
+**MSU TJ** is a comprehensive mobile application for the Lomonosov Moscow State University (Dushanbe Branch). It empowers both **Students** and **Teachers** with real-time schedule tracking, smart classroom finding, offline schedule access, and instant university alerts.
 
-<p align="center">
-  <a href="https://github.com/yusufjon-developer/msu-tj-android/releases/tag/v2.0.0">
-    <img src="https://img.shields.io/badge/Download-APK%20v2.0.0-blue?style=for-the-badge&logo=android" alt="Download APK">
-  </a>
-</p>
+---
 
-## ✨ Key Features (v2.0.0)
+## ✨ Key Features
 
 * **👥 Role-Based Experience:**
-    *   **Students:** Instant access to group schedules and faculty news.
-    *   **Teachers:** Personalized dashboard with teaching load and topic-based notifications.
-* **📅 Advanced Scheduling:**
-    *   **Next Week Preview:** Toggle to view the upcoming week's schedule in advance.
-    *   **Swipe Navigation:** Easily switch between days of the week.
-* **🏫 Smart Free Classrooms:** Find available auditoriums filtered by specific time slots and window periods.
-* **🔄 In-App Updates:**
-    *   Beautiful **Full-Screen Update Hub** prevents you from missing critical versions.
-    *   Supports forced (critical) and optional updates.
-* **👤 Enhanced Profile:**
-    *   Full 3-line name display (Surname, Name, Patronymic).
-    *   **Direct Editing:** Fix typos or update your details directly within the app.
-* **🔔 Intelligent Notifications:**
-    *    targeted alerts based on your role (Student Group or Teacher Staff).
+    * **Students:** Instant access to group schedules and faculty news.
+    * **Teachers:** Personalized dashboard with teaching load and topic-based notifications.
+* **📅 Advanced Scheduling (Offline-First):**
+    * **Instant Offline Load:** Schedules are cached locally in Room DB. If there is no network, the app works flawlessly using cached data.
+    * **Next Week Preview:** Toggle to view the upcoming week's schedule in advance.
+    * **Swipe Navigation:** Easily switch between days of the week.
+* **🏫 Smart Free Classrooms:** Find available auditoriums filtered by specific time slots. Integrates with schedule "windows" to show free classrooms dynamically.
+* **👤 Direct Profile Editing:** Fix typos or update your details (Surname, Name, Patronymic) directly within the app.
+* **🔔 Intelligent Notifications:** Targeted alerts based on your role (Student Group or Teacher Staff) cached locally with an optimistic UI update pattern.
+
+---
 
 ## 📱 Screenshots
 
@@ -37,51 +32,115 @@
 |:---------------------------------------------:|:----------------------------------------------:|:--------------------------------------------:|:--------------------------------------------------:|
 | <img src="assets/schedule.jpg" width="250" /> | <img src="assets/freerooms.jpg" width="250" /> | <img src="assets/teacher.jpg" width="250" /> | <img src="assets/notifications.jpg" width="250" /> |
 
-## 🛠 Tech Stack
-
-### Android App (Client)
-* **Language:** Kotlin
-* **UI:** Jetpack Compose (Material Design 3)
-* **Architecture:** Clean Architecture + MVI (Model-View-Intent)
-* **DI (Dependency Injection):** Koin
-* **Concurrency:** Kotlin Coroutines & Flow
-* **Navigation:** Jetpack Navigation Compose
-
-### Backend Service (Go)
-* **Language:** Golang
-* **Purpose:** Parsing schedule XLS files, managing data consistency, and dispatching FCM payloads.
-* **Integration:** Firebase Admin SDK.
-
-### Cloud Services (Firebase)
-* **Authentication:** Secure Email/Password & Google Sign-In.
-* **Realtime Database:** Stores live schedule data (Current & Next Week).
-* **Cloud Firestore:** User profiles, roles, and subscriptions.
-* **Cloud Messaging (FCM):** Targeted push notifications.
+---
 
 ## 🏗 System Architecture
 
-The project follows an **Event-Driven Architecture**:
+The application is built using **Clean Architecture** principles combined with an **MVI (Model-View-Intent)** presentation layer to ensure clear separation of concerns, testability, and a unidirectional data flow (UDF).
 
-1.  The **Go Backend** parses schedule files -> Updates **Firebase Realtime DB**.
-2.  The **Android App** observes data via `Flow` and updates the UI instantly.
-3.  **Cloud Functions** monitor changes and trigger **FCM** notifications to specific topics (`faculty_course` or `teachers`).
-4.  The **Android App** receives the push and handles deep linking or data refresh.
+```mermaid
+graph TD
+    subgraph Presentation Layer
+        UI[Jetpack Compose UI]
+        VM[MVI ViewModel]
+    end
+    subgraph Domain Layer
+        Model[Domain Models]
+        RepoIntf[Repository Interfaces]
+    end
+    subgraph Data Layer
+        RepoImpl[Repository Implementations]
+        Room[Room Local DB]
+        Firebase[Firebase RTDB / Firestore]
+        Pref[DataStore Preferences]
+    end
 
-## 🚀 Getting Started
+    UI -->|UiEvents| VM
+    VM -->|Observes State| UI
+    VM -->|Invokes| RepoIntf
+    RepoImpl -.-> RepoIntf
+    RepoImpl -->|Reads/Writes| Room
+    RepoImpl -->|Syncs/Listens| Firebase
+    RepoImpl -->|Caches| Pref
+    Room -->|Flows| VM
+```
 
-### 1. Android Client
-1.  Clone the repository:
-    ```bash
-    git clone https://github.com/yusufjon-developer/msu-tj-android.git
-    ```
-2.  **Prerequisite:** Place your `google-services.json` in the `app/` directory.
-3.  Open in Android Studio and sync Gradle.
-4.  Run on device/emulator.
+### 🔄 Offline-First Sync Flow
 
-### 2. Go Backend
-*   Repository: [msu-tj-backend](https://github.com/yusufjon-developer/msu-tj-backend)
-*   Requires `serviceAccountKey.json`.
+The app treats the **Room Database** as the Single Source of Truth. When a user requests data, the cached values are delivered instantly, while a background Firebase connection fetches updates and saves them directly to Room:
 
-## 📄 License
+```mermaid
+sequenceDiagram
+    participant UI as Compose UI
+    participant VM as MVI ViewModel
+    participant Repo as Repository
+    participant Room as Room Local DB
+    participant Firebase as Firebase RTDB
 
-This project is distributed under the MIT License. See the [LICENSE](LICENSE) file for more details.
+    UI->>VM: Start Screen (LoadData)
+    VM->>Repo: Observe Data Flow
+    activate Repo
+    Repo->>Room: Get Flow<CachedData>
+    Room-->>Repo: Emit Cache
+    Repo-->>VM: Emit Domain Models (Cache)
+    VM-->>UI: Render (Instant Load)
+    
+    Note over Repo,Firebase: In parallel, start real-time listener
+    Firebase->>Repo: Data Updated (DataSnapshot)
+    Repo->>Room: Save to DB (Refresh Transaction)
+    Room-->>Repo: Emit Updated Data Flow
+    Repo-->>VM: Emit Domain Models (Live)
+    VM-->>UI: Render (UI Updates Smoothly)
+    deactivate Repo
+```
+
+---
+
+## 🛠 Tech Stack
+
+* **Language:** Kotlin
+* **UI:** Jetpack Compose (Material Design 3)
+* **DI:** Koin (using KSP compiler annotation bindings)
+* **Concurrency:** Kotlin Coroutines & Flow
+* **Database:** Room DB (with indexes optimized for quick schedule/notification lookups)
+* **Key-Value Store:** Jetpack DataStore Preferences
+* **Backend:** Firebase (Authentication, Realtime Database, Cloud Firestore, Cloud Messaging)
+* **Testing:** JUnit 5, MockK, Coroutines Test, Turbine
+
+---
+
+## 🚀 Getting Started & Local Setup
+
+### 📋 Prerequisites
+1. Clone the repository:
+   ```bash
+   git clone https://github.com/yusufjon-developer/msu-tj-android.git
+   ```
+2. Place your `google-services.json` inside the `app/` directory.
+
+### 🔑 Google Sign-In Configuration
+To run Google Sign-In locally on your development machine, you must register your debug keystore SHA-1 fingerprint in your Firebase project console:
+
+1. **Extract your SHA-1 fingerprint:**
+   * **Windows:**
+     ```bash
+     keytool -list -v -alias androiddebugkey -keystore %USERPROFILE%\.android\debug.keystore -storepass android
+     ```
+   * **macOS/Linux:**
+     ```bash
+     keytool -list -v -alias androiddebugkey -keystore ~/.android/debug.keystore -storepass android
+     ```
+2. Go to **Firebase Console -> Project Settings -> General**.
+3. Under **Your Apps -> tj.msu**, click **Add Fingerprint** and paste your SHA-1.
+4. Download the updated `google-services.json` and replace it in the `app/` folder.
+
+---
+
+## 🧪 Running Tests
+
+Unit tests are written using JUnit 5, MockK, and Turbine to test ViewModel state transitions and data mappers.
+
+To run tests:
+```bash
+./gradlew testDebugUnitTest
+```
